@@ -7,7 +7,24 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		64933376214D079800E2CCAE /* mnist.c in Sources */ = {isa = PBXBuildFile; fileRef = 64933375214D079800E2CCAE /* mnist.c */; };
+		64933379214E66BD00E2CCAE /* optimization.c in Sources */ = {isa = PBXBuildFile; fileRef = 64933378214E66BD00E2CCAE /* optimization.c */; };
 		64B2C188214BB58500891B88 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 64B2C187214BB58500891B88 /* main.c */; };
+		64B2C192214BB5BF00891B88 /* vector.c in Sources */ = {isa = PBXBuildFile; fileRef = 64B2C191214BB5BF00891B88 /* vector.c */; };
+		64B2C196214BB5F100891B88 /* macros.c in Sources */ = {isa = PBXBuildFile; fileRef = 64B2C195214BB5F100891B88 /* macros.c */; };
+		64B2C19D214BC86000891B88 /* sort.c in Sources */ = {isa = PBXBuildFile; fileRef = 64B2C19C214BC86000891B88 /* sort.c */; };
+		64B2C1A1214BCB1400891B88 /* matrix.c in Sources */ = {isa = PBXBuildFile; fileRef = 64B2C1A0214BCB1400891B88 /* matrix.c */; };
+		64B2C1A5214BD24C00891B88 /* algebra.c in Sources */ = {isa = PBXBuildFile; fileRef = 64B2C1A4214BD24C00891B88 /* algebra.c */; };
+		64B2C1A9214BD3B700891B88 /* csv.c in Sources */ = {isa = PBXBuildFile; fileRef = 64B2C1A8214BD3B700891B88 /* csv.c */; };
+		64B2C1AC214BD46A00891B88 /* probability.c in Sources */ = {isa = PBXBuildFile; fileRef = 64B2C1AB214BD46A00891B88 /* probability.c */; };
+		64B2C1AF214BD54100891B88 /* set.c in Sources */ = {isa = PBXBuildFile; fileRef = 64B2C1AE214BD54100891B88 /* set.c */; };
+		64B2C1B4214C324A00891B88 /* cell.c in Sources */ = {isa = PBXBuildFile; fileRef = 64B2C1B3214C324A00891B88 /* cell.c */; };
+		64B2C1B7214C342500891B88 /* network.c in Sources */ = {isa = PBXBuildFile; fileRef = 64B2C1B6214C342500891B88 /* network.c */; };
+		64B2C1BA214C34AF00891B88 /* router.c in Sources */ = {isa = PBXBuildFile; fileRef = 64B2C1B9214C34AF00891B88 /* router.c */; };
+		64B2C1BE214C35E300891B88 /* activation.c in Sources */ = {isa = PBXBuildFile; fileRef = 64B2C1BD214C35E300891B88 /* activation.c */; };
+		64B2C1C1214C360400891B88 /* aggregation.c in Sources */ = {isa = PBXBuildFile; fileRef = 64B2C1C0214C360400891B88 /* aggregation.c */; };
+		64B2C1C4214C362400891B88 /* transfer.c in Sources */ = {isa = PBXBuildFile; fileRef = 64B2C1C3214C362400891B88 /* transfer.c */; };
+		64B2C1C7214C36D100891B88 /* cost.c in Sources */ = {isa = PBXBuildFile; fileRef = 64B2C1C6214C36D100891B88 /* cost.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -23,8 +40,42 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		64933374214D079800E2CCAE /* mnist.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = mnist.h; sourceTree = "<group>"; };
+		64933375214D079800E2CCAE /* mnist.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = mnist.c; sourceTree = "<group>"; };
+		64933377214E66BD00E2CCAE /* optimization.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = optimization.h; sourceTree = "<group>"; };
+		64933378214E66BD00E2CCAE /* optimization.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = optimization.c; sourceTree = "<group>"; };
 		64B2C184214BB58500891B88 /* naive */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = naive; sourceTree = BUILT_PRODUCTS_DIR; };
 		64B2C187214BB58500891B88 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
+		64B2C190214BB5BF00891B88 /* vector.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = vector.h; sourceTree = "<group>"; };
+		64B2C191214BB5BF00891B88 /* vector.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = vector.c; sourceTree = "<group>"; };
+		64B2C194214BB5F100891B88 /* macros.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = macros.h; sourceTree = "<group>"; };
+		64B2C195214BB5F100891B88 /* macros.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = macros.c; sourceTree = "<group>"; };
+		64B2C19B214BC86000891B88 /* sort.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = sort.h; sourceTree = "<group>"; };
+		64B2C19C214BC86000891B88 /* sort.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = sort.c; sourceTree = "<group>"; };
+		64B2C19F214BCB1400891B88 /* matrix.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = matrix.h; sourceTree = "<group>"; };
+		64B2C1A0214BCB1400891B88 /* matrix.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = matrix.c; sourceTree = "<group>"; };
+		64B2C1A3214BD24C00891B88 /* algebra.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = algebra.h; sourceTree = "<group>"; };
+		64B2C1A4214BD24C00891B88 /* algebra.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = algebra.c; sourceTree = "<group>"; };
+		64B2C1A7214BD3B700891B88 /* csv.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = csv.h; sourceTree = "<group>"; };
+		64B2C1A8214BD3B700891B88 /* csv.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = csv.c; sourceTree = "<group>"; };
+		64B2C1AA214BD46A00891B88 /* probability.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = probability.h; sourceTree = "<group>"; };
+		64B2C1AB214BD46A00891B88 /* probability.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = probability.c; sourceTree = "<group>"; };
+		64B2C1AD214BD54100891B88 /* set.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = set.h; sourceTree = "<group>"; };
+		64B2C1AE214BD54100891B88 /* set.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = set.c; sourceTree = "<group>"; };
+		64B2C1B2214C324A00891B88 /* cell.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = cell.h; sourceTree = "<group>"; };
+		64B2C1B3214C324A00891B88 /* cell.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = cell.c; sourceTree = "<group>"; };
+		64B2C1B5214C342500891B88 /* network.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = network.h; sourceTree = "<group>"; };
+		64B2C1B6214C342500891B88 /* network.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = network.c; sourceTree = "<group>"; };
+		64B2C1B8214C34AF00891B88 /* router.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = router.h; sourceTree = "<group>"; };
+		64B2C1B9214C34AF00891B88 /* router.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = router.c; sourceTree = "<group>"; };
+		64B2C1BC214C35E300891B88 /* activation.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = activation.h; sourceTree = "<group>"; };
+		64B2C1BD214C35E300891B88 /* activation.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = activation.c; sourceTree = "<group>"; };
+		64B2C1BF214C360400891B88 /* aggregation.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = aggregation.h; sourceTree = "<group>"; };
+		64B2C1C0214C360400891B88 /* aggregation.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = aggregation.c; sourceTree = "<group>"; };
+		64B2C1C2214C362400891B88 /* transfer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = transfer.h; sourceTree = "<group>"; };
+		64B2C1C3214C362400891B88 /* transfer.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = transfer.c; sourceTree = "<group>"; };
+		64B2C1C5214C36D100891B88 /* cost.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = cost.h; sourceTree = "<group>"; };
+		64B2C1C6214C36D100891B88 /* cost.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = cost.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -57,9 +108,91 @@
 		64B2C186214BB58500891B88 /* naive */ = {
 			isa = PBXGroup;
 			children = (
+				64B2C1B1214C324000891B88 /* neural */,
+				64B2C1A6214BD3A200891B88 /* data */,
+				64B2C1A2214BD23800891B88 /* test */,
+				64B2C193214BB5DE00891B88 /* util */,
+				64B2C18F214BB5A400891B88 /* math */,
 				64B2C187214BB58500891B88 /* main.c */,
 			);
 			path = naive;
+			sourceTree = "<group>";
+		};
+		64B2C18F214BB5A400891B88 /* math */ = {
+			isa = PBXGroup;
+			children = (
+				64B2C190214BB5BF00891B88 /* vector.h */,
+				64B2C191214BB5BF00891B88 /* vector.c */,
+				64B2C19F214BCB1400891B88 /* matrix.h */,
+				64B2C1A0214BCB1400891B88 /* matrix.c */,
+				64B2C1AA214BD46A00891B88 /* probability.h */,
+				64B2C1AB214BD46A00891B88 /* probability.c */,
+			);
+			path = math;
+			sourceTree = "<group>";
+		};
+		64B2C193214BB5DE00891B88 /* util */ = {
+			isa = PBXGroup;
+			children = (
+				64B2C194214BB5F100891B88 /* macros.h */,
+				64B2C195214BB5F100891B88 /* macros.c */,
+				64B2C19B214BC86000891B88 /* sort.h */,
+				64B2C19C214BC86000891B88 /* sort.c */,
+			);
+			path = util;
+			sourceTree = "<group>";
+		};
+		64B2C1A2214BD23800891B88 /* test */ = {
+			isa = PBXGroup;
+			children = (
+				64B2C1A3214BD24C00891B88 /* algebra.h */,
+				64B2C1A4214BD24C00891B88 /* algebra.c */,
+				64933374214D079800E2CCAE /* mnist.h */,
+				64933375214D079800E2CCAE /* mnist.c */,
+			);
+			path = test;
+			sourceTree = "<group>";
+		};
+		64B2C1A6214BD3A200891B88 /* data */ = {
+			isa = PBXGroup;
+			children = (
+				64B2C1A7214BD3B700891B88 /* csv.h */,
+				64B2C1A8214BD3B700891B88 /* csv.c */,
+				64B2C1AD214BD54100891B88 /* set.h */,
+				64B2C1AE214BD54100891B88 /* set.c */,
+			);
+			path = data;
+			sourceTree = "<group>";
+		};
+		64B2C1B1214C324000891B88 /* neural */ = {
+			isa = PBXGroup;
+			children = (
+				64B2C1BB214C35CA00891B88 /* body */,
+				64B2C1B2214C324A00891B88 /* cell.h */,
+				64B2C1B3214C324A00891B88 /* cell.c */,
+				64B2C1B5214C342500891B88 /* network.h */,
+				64B2C1B6214C342500891B88 /* network.c */,
+				64B2C1B8214C34AF00891B88 /* router.h */,
+				64B2C1B9214C34AF00891B88 /* router.c */,
+			);
+			path = neural;
+			sourceTree = "<group>";
+		};
+		64B2C1BB214C35CA00891B88 /* body */ = {
+			isa = PBXGroup;
+			children = (
+				64B2C1BC214C35E300891B88 /* activation.h */,
+				64B2C1BD214C35E300891B88 /* activation.c */,
+				64B2C1BF214C360400891B88 /* aggregation.h */,
+				64B2C1C0214C360400891B88 /* aggregation.c */,
+				64B2C1C2214C362400891B88 /* transfer.h */,
+				64B2C1C3214C362400891B88 /* transfer.c */,
+				64B2C1C5214C36D100891B88 /* cost.h */,
+				64B2C1C6214C36D100891B88 /* cost.c */,
+				64933377214E66BD00E2CCAE /* optimization.h */,
+				64933378214E66BD00E2CCAE /* optimization.c */,
+			);
+			path = body;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -119,7 +252,24 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				64B2C1C7214C36D100891B88 /* cost.c in Sources */,
+				64B2C1AF214BD54100891B88 /* set.c in Sources */,
+				64B2C1A1214BCB1400891B88 /* matrix.c in Sources */,
+				64B2C192214BB5BF00891B88 /* vector.c in Sources */,
+				64B2C1A5214BD24C00891B88 /* algebra.c in Sources */,
+				64B2C196214BB5F100891B88 /* macros.c in Sources */,
+				64B2C1B4214C324A00891B88 /* cell.c in Sources */,
 				64B2C188214BB58500891B88 /* main.c in Sources */,
+				64B2C1C4214C362400891B88 /* transfer.c in Sources */,
+				64B2C1BE214C35E300891B88 /* activation.c in Sources */,
+				64B2C1A9214BD3B700891B88 /* csv.c in Sources */,
+				64B2C1B7214C342500891B88 /* network.c in Sources */,
+				64B2C19D214BC86000891B88 /* sort.c in Sources */,
+				64B2C1BA214C34AF00891B88 /* router.c in Sources */,
+				64B2C1C1214C360400891B88 /* aggregation.c in Sources */,
+				64B2C1AC214BD46A00891B88 /* probability.c in Sources */,
+				64933379214E66BD00E2CCAE /* optimization.c in Sources */,
+				64933376214D079800E2CCAE /* mnist.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
