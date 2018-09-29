@@ -29,7 +29,7 @@
                                     && cell->context->body.activation == cell->body.axon \
                                     && cell->context->body.error == cell->body.error) \
                                   || cell->context == NULL)
-#define NEURON_CELL_CHECK(cell, message, ...) { check(NEURON_CELL_IS_SYNC(cell), "Cell context is't synchronized." " " message, ##__VA_ARGS__); NEURON_CHECK(cell->body, message, ##__VA_ARGS__);  }
+#define NEURON_CELL_CHECK(cell, message, ...) { check(NEURON_CELL_IS_SYNC((cell)), "Cell context is't synchronized." " " message, ##__VA_ARGS__); NEURON_CHECK((cell)->body, message, ##__VA_ARGS__);  }
 #define NEURON(n_network, layer, position) *((n_network)->neurons + Network.neuron(n_network, layer, position))
 
 

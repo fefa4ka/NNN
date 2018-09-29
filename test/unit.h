@@ -8,11 +8,11 @@
 
 #define test_init() char *message = NULL
 
-#define test_asset(test, message) \
-    if (!(test))                  \
-    {                             \
-        log_error(message);       \
-        return message;           \
+#define test_assert(test, message, ...)    \
+    if (!(test))                           \
+    {                                      \
+        log_error(message, ##__VA_ARGS__); \
+        return message;                    \
     }
 
 #define test_run(test)              \
@@ -25,6 +25,7 @@
 #define RUN_TESTS(name)                          \
     int main(int argc, char *argv[])             \
     {                                            \
+        srand((unsigned int)time(NULL));         \
         argc = 1;                                \
         printf("[RUNNING] %s\n", argv[0]);       \
         char *result = name();                   \

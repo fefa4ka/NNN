@@ -9,7 +9,7 @@ do
         then
            echo "----------"
         else
-           echo "Error log: test/process.log\n"
+           echo "[FAILED] ./$i: Read more test/process.log\n"
         fi
     fi
     echo ""

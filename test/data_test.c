@@ -6,7 +6,7 @@ matrix *binary_target;
 
 char *data_set_test(data_set set)
 {
-    test_asset(set.data.fields != NULL && set.features.labels != NULL && set.target.labels != NULL, "Data set fields is NULL");
+    test_assert(set.data.fields != NULL && set.features.labels != NULL && set.target.labels != NULL, "Data set fields is NULL");
     MATRIX_CHECK(set.data.values);
     MATRIX_CHECK(set.features.values);
     MATRIX_CHECK(set.target.values);
@@ -20,7 +20,7 @@ char *iris_load() {
     char *target_labels[] = {"species", NULL};
     set = Data.csv("/Users/fefa4ka/Development/math/math/dataset/iris.csv", NULL, target_labels);
     char *iris_test = data_set_test(set);
-    test_asset(iris_test == NULL, "Iris data set corrupted");    
+    test_assert(iris_test == NULL, "Iris data set corrupted");    
 
     return NULL;
 
@@ -40,9 +40,21 @@ error:
 char *data_from_marix() {
     data_set iris_binary = Data.matrix(set.features.values, binary_target);
     char *iris_binary_test = data_set_test(iris_binary);
-    test_asset(iris_binary_test == NULL, "Binary data set target corrupted");
+    test_assert(iris_binary_test == NULL, "Binary data set target corrupted");
+    Data.delete(&iris_binary);
 
     return NULL;
+}
+
+char *data_delete() {
+    Data.delete(&set);
+    Matrix.delete(binary_target);
+
+    if(data_set_test(set)) {
+        return NULL;
+    } else {
+        return "Data set exist after delete";
+    }
 }
 
 char *all_tests() {
@@ -51,7 +63,8 @@ char *all_tests() {
     test_run(iris_load);
     test_run(vector_to_binary);
     test_run(data_from_marix);
-
+    test_run(data_delete);
+    
     return NULL;
 }
 
