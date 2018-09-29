@@ -28,7 +28,7 @@
 #define VECTOR(vector, index) *((vector)->values + index)
 
 #define VECTOR_FOREACH(vector) \
-    for(size_t index = 0; index < (vector)->size; index++)
+    for(size_t index = 0; index < (vector)->size; index++) \
 
 #define PI 3.14159265358979323846
 
