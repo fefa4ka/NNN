@@ -246,7 +246,7 @@ vector_reshape(vector *instance, size_t size) {
     instance->values = realloc(instance->values, size * sizeof(float));
     
     if(size > instance->size) {
-        memset(&(instance->values[instance->size]), 0, (size - instance->size) * sizeof(float));
+        memset(instance->values + instance->size, 0, (size - instance->size) * sizeof(float));
     }
     
     instance->size = size;
@@ -260,7 +260,8 @@ error:
 static
 void
 vector_delete(void *instance) {
-    if(IS(instance, VECTOR_TYPE)) {
+    if (IS(instance, VECTOR_TYPE))
+    {
         vector *vec = (vector*)instance;
         free(vec->values);
         free(vec);
@@ -273,7 +274,6 @@ vector_delete(void *instance) {
         free(hash);
     }
 }
-
 
 /* Data */
 static

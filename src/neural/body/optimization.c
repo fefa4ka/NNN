@@ -21,9 +21,12 @@ optimization_cell_gradient(neural_cell *cell) {
     // Eo — forward neuron errors
     vector *total_error = Vector.create(cell->context->body.signal->rows);
     
-    Vector.delete(cell->context->prime.activation);
-    Matrix.delete(cell->context->prime.signal);
-    Vector.delete(cell->context->prime.transfer);
+    if(cell->context->prime.activation) {
+        Vector.delete(cell->context->prime.activation);
+        Matrix.delete(cell->context->prime.signal);
+        Vector.delete(cell->context->prime.transfer);
+        Vector.delete(cell->context->prime.weight);
+    }
     
     vector *activation_derivative = cell->body.nucleus.activation.derivative(cell->context);
     cell->context->prime.activation = activation_derivative;
@@ -34,7 +37,7 @@ optimization_cell_gradient(neural_cell *cell) {
     matrix *transfer_derivative_over_weight = cell->body.nucleus.transfer.derivative(cell->context, true);
     matrix *transfer_derivative_over_signal = cell->body.nucleus.transfer.derivative(cell->context, false);
     cell->context->prime.signal = transfer_derivative_over_signal;
-    cell->context->prime.transfer = transfer_derivative_over_weight;
+    cell->context->prime.transfer = Vector.copy(transfer_derivative_over_weight->vector);
     
     // Total Error
     size_t axon_dimension = 0;
@@ -66,6 +69,8 @@ optimization_cell_gradient(neural_cell *cell) {
                                  axon_error);
         
         Vector.delete(axon_error);
+        
+        axon_dimension++;
     }
     
     if(axon_dimension == 0) {
@@ -74,14 +79,16 @@ optimization_cell_gradient(neural_cell *cell) {
     }
 
     Vector.delete(cell->body.error);
-    Vector.delete(cell->context->prime.weight);
     
     cell->body.error = Vector.mul(total_error,
                                   activation_derivative);
     cell->context->body.error = cell->body.error;
     
-    cell->context->prime.weight = Vector.mul(Vector.copy(cell->body.error),
-                                             transfer_derivative_over_weight);
+    vector *weight_prime = Vector.mul(Vector.copy(cell->body.error),
+                                      transfer_derivative_over_weight);
+    cell->context->prime.weight = Matrix.from(weight_prime, weight_prime->size, 1);
+    Matrix.delete(transfer_derivative_over_weight);
+    Vector.delete(weight_prime);
 }
 
 //static

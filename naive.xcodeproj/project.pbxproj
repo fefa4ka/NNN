@@ -92,7 +92,7 @@
 		64B2C17B214BB58500891B88 = {
 			isa = PBXGroup;
 			children = (
-				64B2C186214BB58500891B88 /* naive */,
+				64B2C186214BB58500891B88 /* src */,
 				64B2C185214BB58500891B88 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -105,7 +105,7 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		64B2C186214BB58500891B88 /* naive */ = {
+		64B2C186214BB58500891B88 /* src */ = {
 			isa = PBXGroup;
 			children = (
 				64B2C1B1214C324000891B88 /* neural */,
@@ -115,7 +115,7 @@
 				64B2C18F214BB5A400891B88 /* math */,
 				64B2C187214BB58500891B88 /* main.c */,
 			);
-			path = naive;
+			path = src;
 			sourceTree = "<group>";
 		};
 		64B2C18F214BB5A400891B88 /* math */ = {

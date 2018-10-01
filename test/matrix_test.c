@@ -13,8 +13,6 @@ char *matrix_create() {
 }
 
 char *matrix_delete() {
-    matrix *ptr = M;
-
     Matrix.delete(M);
 
     MATRIX_CHECK(M);

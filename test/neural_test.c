@@ -19,11 +19,8 @@ char *data_load()
 char *network_test(neural_network *network){
     test_assert(network->resolution.layers == 3, "Layers number is not as expected");
     test_assert(network->resolution.size == 34, "Network size is different than expected %zd != %d", network->resolution.size, 34);
-
-    for (size_t index = 0; index < network->resolution.size; index++) {
-        NEURON_CELL_CHECK(&network->neurons[index], "Neuron cell %zd is broken", index);
-    }
-
+    NETWORK_CHECK(network);
+    
     return NULL;
 error:
     return "Neuron cell broken";
@@ -35,14 +32,6 @@ char *network_create()
         Transfer.linear,
         Aggregation.sum,
         Activation.tanh,
-        Cost.mean_squared,
-        Optimization.sgd
-    };
-
-    neuron_kernel another = {
-        Transfer.linear,
-        Aggregation.sum,
-        Activation.relu,
         Cost.mean_squared,
         Optimization.sgd
     };
@@ -76,16 +65,45 @@ char *network_create()
     };
 
     network = Network.create(layers);
-    char *network_test_result = network_test(&network);
+    for (int try = 0; try < 1000; try++) {
+        Network.delete(&network);
+        network = Network.create(layers);
+        char *network_test_result = network_test(&network);
+        test_assert(network_test_result == NULL, "%s", network_test_result);
+    }
 
-    test_assert(network_test_result == NULL, "%s", network_test_result);
+   return NULL;
+}
+
+char *neuron_layer() {
+     for (int try = 0; try < 1000; try++) {
+        size_t random_index = (size_t)random_range(0, network.resolution.size);
+        neural_cell *cell = &(network.neurons[random_index]);
+        NEURON_CELL_CHECK(cell, "Random cell %zd from network broken", random_index);
+        neural_cell **layer_neurons = Neuron.context.layer(cell);
+        NEURONS_CHECK(layer_neurons, "Layer for %zdx%zd neuron is broken", cell->coordinates.layer, cell->coordinates.position);
+        free(layer_neurons);
+     }
+
+     return NULL;
+error:
+    return "Failed to get neuron layer";
+}
+
+char *neuron_create_context() {
+    for (int try = 0; try < 1000; try++) {
+        size_t random_index = (size_t)random_range(0, network.resolution.size);
+        neural_cell *cell = &(network.neurons[random_index]);
+        neuron_context *context = Neuron.context.create(cell);
+        Neuron.context.delete(context);
+    }
 
     return NULL;
 }
 
 char *network_fire() {
     matrix *axon;
-    for (size_t i = 0; i < 10000; i++)
+    for (size_t i = 0; i < 1000; i++)
     {
         axon = Network.fire(&network, iris_nn.test->features.values);
         MATRIX_CHECK(axon);
@@ -148,6 +166,8 @@ char *all_tests() {
 
     test_run(network_create);
     test_run(data_load);
+    test_run(neuron_layer);
+    test_run(neuron_create_context);
     test_run(network_fire);
     test_run(network_error);
     test_run(or_train);
