@@ -164,23 +164,27 @@ tanh_derivative(neuron_context *context) {
 static
 vector *
 soft_max(neuron_context *context) {
-    size_t number_of_samples = context->body.activation->size;
+    size_t number_of_samples = context->body.signal->rows;
     size_t layer_dimension = context->layer.dimension;
-    
+    check(number_of_samples && layer_dimension, "Soft max wrong context: n = %zd, l = %zd", number_of_samples, layer_dimension);
+
     vector *activation = Vector.create(number_of_samples);
     
     for(size_t sample = 0; sample < number_of_samples; sample++) {
         float layer_exp_sum = 0;
-        for(size_t index = 0; index < layer_dimension; index++) {
-            float layer_axon_value_of_sample = VECTOR(context->layer.axon[index], sample);
+        for (vector ***axon = context->layer.axon; *axon; axon++ ){
+            VECTOR_CHECK_PRINT(**axon, "Axon vector in layer is broken");
+            float layer_axon_value_of_sample = VECTOR(**axon, sample);
             layer_exp_sum += exp(layer_axon_value_of_sample);
         }
-        
+        VECTOR_CHECK_PRINT(context->body.activation, "Activation of context is broken");
         float axon_value_of_sample = VECTOR(context->body.activation, sample);
         VECTOR(activation, sample) = exp(axon_value_of_sample) / layer_exp_sum;
     }
     
     return activation;
+error:
+    return NULL;
 }
 
 static
@@ -193,18 +197,22 @@ soft_max_derivative(neuron_context *context) {
     
     for(size_t sample = 0; sample < number_of_samples; sample++) {
         float layer_exp_sum = 0;
-        for(size_t index = 0; index < layer_dimension; index++) {
-            float layer_axon_value_of_sample = VECTOR(context->layer.axon[index], sample);
+        for (vector ***axon = context->layer.axon; *axon; axon++ ){
+            VECTOR_CHECK_PRINT(**axon, "Axon vector in layer is broken");
+            float layer_axon_value_of_sample = VECTOR(**axon, sample);
             layer_exp_sum += exp(layer_axon_value_of_sample);
         }
-        
+        VECTOR_CHECK_PRINT(context->body.activation, "Activation of context is broken");
+
         float axon_value_of_sample = VECTOR(context->body.activation, sample);
         float exp_axon_value = exp(axon_value_of_sample);
         VECTOR(prime, sample) = exp_axon_value * (layer_exp_sum - exp_axon_value)
-        / layer_exp_sum;
+                                / layer_exp_sum;
     }
     
     return prime;
+error:
+    return NULL;
 }
 
 /* Heaviside Step */

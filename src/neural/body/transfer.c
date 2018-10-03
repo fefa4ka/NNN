@@ -42,9 +42,9 @@ static
 matrix *
 transfer_linear_derivative(neuron_context *context, enum bool by_weight) {
     if(by_weight) {
-        return context->body.signal;
+        return Matrix.copy(context->body.signal);
     } else {
-        return context->body.weight;
+        return Matrix.copy(context->body.weight);
     }
 }
 

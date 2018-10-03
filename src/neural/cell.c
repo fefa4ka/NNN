@@ -194,29 +194,31 @@ neuron_context_create(neural_cell *cell) {
     NEURONS_CHECK(layer_neurons, "Layer for %zdx%zd cell building failed.", cell->coordinates.layer, cell->coordinates.position);
 
     size_t layer_index = 0;
-    vector **layer_axon = malloc(sizeof(vector*));
-    vector **layer_error = malloc(sizeof(vector*));
+    vector ***layer_axon = malloc(sizeof(vector**));
+    vector ***layer_error = malloc(sizeof(vector**));
     
     while(layer_neurons[layer_index]) {
         NEURON_CELL_CHECK(layer_neurons[layer_index], "Cell %zd from layer is broken", layer_index);
-        size_t layer_size = (layer_index + 1) * sizeof(vector*);
+        size_t layer_size = (layer_index + 2) * sizeof(vector**);
         
         layer_axon = realloc(layer_axon, layer_size);
         check_memory(layer_axon);
-        layer_axon[layer_index] = layer_neurons[layer_index]->body.axon;
+        layer_axon[layer_index] = &(layer_neurons[layer_index]->body.axon);
         check_memory(layer_axon[layer_index]);
-        VECTOR_CHECK_PRINT(layer_axon[layer_index],
-                           "[%zd] Axon not vector", layer_index);
+        VECTOR_CHECK_PRINT(*layer_axon[layer_index],
+                           "[%zd] Axon vector is broken", layer_index);
         
         layer_error = realloc(layer_error, layer_size);
         check_memory(layer_error);
-        layer_error[layer_index] = layer_neurons[layer_index]->body.error;
-        VECTOR_CHECK_PRINT(layer_error[layer_index],
-                           "[%zd] Error not vector", layer_index);
+        layer_error[layer_index] = &(layer_neurons[layer_index]->body.error);
+        VECTOR_CHECK_PRINT(*layer_error[layer_index],
+                           "[%zd] Error vector is broken", layer_index);
         
         layer_index++;
+        layer_axon[layer_index] = NULL;
+        layer_error[layer_index] = NULL;
     }
-    
+
     free(layer_neurons);
     
     neuron_context *context = malloc(sizeof(neuron_context));
@@ -276,12 +278,13 @@ neuron_fire(neural_cell *cell, matrix *data) {
                                                body->bias);
     VECTOR_CHECK_PRINT(body->transfer, "Broken fire transfer");
     cell->context->body.transfer = body->transfer;
-    
+
+    vector *activation = kernel->activation.of(cell->context);
+    VECTOR_CHECK_PRINT(activation, "Broken fire activation");
     Vector.delete(body->axon);
-    body->axon = kernel->activation.of(cell->context);
-    VECTOR_CHECK_PRINT(body->transfer, "Broken fire axon");
-    cell->context->body.activation = body->axon;
     
+    cell->context->body.activation = body->axon = activation;
+
     neuron_fire_forward(cell);
     
     return cell;

@@ -25,9 +25,9 @@ struct neuron_state {
 };
 
 struct layer_state {
-    vector **                    axon;
-    vector **                    error;
-    size_t                       dimension;
+    vector ***                    axon;
+    vector ***                    error;
+    size_t                        dimension;
 };
 
 typedef struct {

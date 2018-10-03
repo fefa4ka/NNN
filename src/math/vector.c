@@ -150,12 +150,16 @@ vector *
 vector_create(size_t size) {
     vector *instance = malloc(sizeof(vector));
     float *values = calloc(size, sizeof(float));
-    
+    check_memory(instance);
+    check_memory(values)
+
     instance->type = VECTOR_TYPE;
     instance->size = size;
     instance->values = values;
     
     return instance;
+error:
+    return NULL;
 }
 
 static
@@ -220,10 +224,14 @@ error:
 static
 vector *
 vector_uniq(vector *instance) {
+    check_memory(instance);
     size_t size = 0;
     float *uniq = uniq_floats(instance->values, instance->size, &size);
-    
+    check_memory(uniq);
+
     return vector_create_from_list(size, uniq);
+error:
+    return NULL;
 }
 
 static
@@ -260,6 +268,8 @@ error:
 static
 void
 vector_delete(void *instance) {
+    check_memory(instance);
+    
     if (IS(instance, VECTOR_TYPE))
     {
         vector *vec = (vector*)instance;
@@ -273,6 +283,9 @@ vector_delete(void *instance) {
         free(hash->keys);
         free(hash);
     }
+
+error:
+    return;
 }
 
 /* Data */

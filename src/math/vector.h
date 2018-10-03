@@ -22,7 +22,7 @@
 #define VECTOR_TYPE "t_Vec"
 #define VECTOR_HASH_TYPE "t_VectorHash"
 
-#define VECTOR_CHECK_PRINT(vector, message, ...) { check_memory(vector); check((vector)->type == VECTOR_TYPE, "Wrong vector type. " message, ##__VA_ARGS__); check((vector)->size, "Vector size doesn't set. " message, ##__VA_ARGS__); }
+#define VECTOR_CHECK_PRINT(vector, message, ...) { check_memory_print(vector, message, ##__VA_ARGS__); check((vector)->type == VECTOR_TYPE, "Wrong vector type. " message, ##__VA_ARGS__); check((vector)->size, "Vector size doesn't set. " message, ##__VA_ARGS__); }
 #define VECTOR_CHECK(vector) VECTOR_CHECK_PRINT(vector, "")
 
 #define VECTOR(vector, index) *((vector)->values + index)

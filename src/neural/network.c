@@ -162,8 +162,8 @@ static
 matrix *
 network_error(neural_network *network, matrix *signal, matrix *target, enum bool derivative) {
     NETWORK_CHECK(network);
-    MATRIX_CHECK(signal);
-    MATRIX_CHECK(target);
+    MATRIX_CHECK_PRINT(signal, "Broken signal for network error");
+    MATRIX_CHECK_PRINT(target, "Broken target for network error");
 
     size_t layer_index = network->resolution.layers - 1;
     size_t layer_size = network->resolution.dimensions[layer_index];
@@ -227,8 +227,12 @@ network_train(neural_network *network, data_batch *training_data, float learning
             network_back_propagation(network, signal, target, learning_rate);
         }
 
-        matrix *test_signal = training_data->test->features.values;
-        matrix *test_target = training_data->test->target.values;
+        matrix *test_signal = training_data->test
+            ? training_data->test->features.values
+            : training_data->train->features.values;
+        matrix *test_target = training_data->test
+            ? training_data->test->target.values
+            : training_data->train->target.values;
         matrix *error = network_error(network, test_signal, test_target, false);
         log_info("[Error: %.10f]", Vector.sum.all(error->vector) / error->rows);
         
@@ -244,8 +248,8 @@ error:
 static
 void
 network_back_propagation(neural_network *network, matrix *signal, matrix *target, float learning_rate) {
-    MATRIX_CHECK(signal);
-    MATRIX_CHECK(target);
+    MATRIX_CHECK_PRINT(signal, "Back propagate broken signal");
+    MATRIX_CHECK_PRINT(target, "Back propagate broken target");
 
     matrix *error = network_error(network, signal, target, true);
 
@@ -274,7 +278,10 @@ network_axon(neural_network *network) {
 
     vector **axon = malloc(layer_size * sizeof(vector*));
     while(layer_size > position) {
-        axon[position] = &NEURON(network, layer_index, position)->body.axon;
+        neural_cell *cell = &NEURON(network, layer_index, position);
+        NEURON_CELL_CHECK(cell, "Last layer broken cell");
+        axon[position] = cell->body.axon;
+        VECTOR_CHECK_PRINT(axon[position], "Broken axon signal from last layer cell");
         position++;
     }
 
@@ -283,6 +290,8 @@ network_axon(neural_network *network) {
     free(axon);
 
     return result;
+error:
+    return NULL;
 }
 
 
