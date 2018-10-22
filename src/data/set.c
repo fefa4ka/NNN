@@ -82,7 +82,9 @@ data_set
 data_from_csv(char *filename, char** feature_labels, char **target_labels) {
     csv *data = data_shuffle(csv_readfile(filename));
     char **_fields = malloc((data->columns + 1) * sizeof(char*));
-    for(size_t index = 0; index < data->columns; index++) {
+    char **_target_labels = malloc(data->columns * sizeof(char*));
+    size_t _target_labels_index = 0;
+    for (size_t index = 0; index < data->columns; index++) {
         _fields[index] = strdup(data->fields[index]);
     }
     _fields[data->columns] = NULL;
@@ -98,6 +100,9 @@ data_from_csv(char *filename, char** feature_labels, char **target_labels) {
             while(target_labels[target_label_index]) {
                 if(strcmp(_fields[index], target_labels[target_label_index]) != 0) {
                     feature_labels[index] = _fields[index];
+                } else {
+                    _target_labels[_target_labels_index] = _fields[index];
+                    _target_labels_index++;
                 }
                 target_label_index++;
             }
@@ -108,6 +113,7 @@ data_from_csv(char *filename, char** feature_labels, char **target_labels) {
         feature_labels = realloc(feature_labels, index * sizeof(char*));
     }
 
+    _target_labels = realloc(_target_labels, (_target_labels_index + 1) * sizeof(char *));
     matrix *features = Matrix.csv(data, feature_labels);
     matrix *target = Matrix.csv(data, target_labels);
     csv_delete(data);
@@ -121,7 +127,7 @@ data_from_csv(char *filename, char** feature_labels, char **target_labels) {
             .values = features,
         },
         .target = {
-            .labels = target_labels,
+            .labels = _target_labels,
             .values = target
         },
         .probability = Probability.from.matrix(all_data,
@@ -188,7 +194,7 @@ data_vector_to_binary_columns(vector *column) {
     vector *uniq = Vector.prop.uniq(column);
     matrix *columns = Matrix.create(column->size, uniq->size);
     
-    VECTOR_FOREACH(column) {
+    vector_foreach(column) {
         float value = VECTOR(column, index);
         MATRIX(columns, index, Vector.prop.index_of(uniq, value)) = 1.;
     }
