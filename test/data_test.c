@@ -4,12 +4,11 @@
 data_set set;
 matrix *binary_target;
 
-char *data_set_test(data_set set)
-{
+char *data_set_test(data_set set) {
     test_assert(set.data.fields != NULL && set.features.labels != NULL && set.target.labels != NULL, "Data set fields is NULL");
-    MATRIX_CHECK(set.data.values);
-    MATRIX_CHECK(set.features.values);
-    MATRIX_CHECK(set.target.values);
+    matrix_check(set.data.values);
+    matrix_check(set.features.values);
+    matrix_check(set.target.values);
 
     return NULL;
 error:
@@ -30,7 +29,7 @@ error:
 
 char *vector_to_binary() {
     binary_target = Data.convert.vector_to_binary(set.target.values->vector);
-    MATRIX_CHECK(binary_target);
+    matrix_check(binary_target);
 
     return NULL;
 error:

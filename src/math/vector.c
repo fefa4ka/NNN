@@ -1,3 +1,4 @@
+
 //
 //  vector.c
 //  math
@@ -121,19 +122,21 @@ const struct vector_library Vector = {
 
 
 /* Macros */
-#define VECTOR_FOREACH(vector) \
-    for(size_t index = 0; index < (vector)->size; index++)
+#define VECTOR_OPERATION(result, v, w, expression)                                    \
+    vector_foreach(result)                                                            \
+    {                                                                                 \
+        VECTOR(result, index) = VECTOR(v, index) expression VECTOR(w, index);         \
+        check(VECTOR(result, index) == VECTOR(result, index),                         \
+              "Operation %f " #expression " %f is %f", VECTOR(v, index), VECTOR(w, index), VECTOR(result, index)); \
+    }
 
-#define VECTOR_OPERATION(result, v, w, expression) \
-    VECTOR_FOREACH(result) { \
-        VECTOR(result, index) = VECTOR(v, index) expression VECTOR(w, index); \
-    } \
-
-#define VECTOR_SCALAR_OPERATION(result, v, scalar, expression) \
-    VECTOR_FOREACH(result) { \
-        VECTOR(result, index) = VECTOR(v, index) expression scalar; \
-    } \
-
+#define VECTOR_SCALAR_OPERATION(result, v, scalar, expression)                                           \
+    vector_foreach(result)                                                                               \
+    {                                                                                                    \
+        VECTOR(result, index) = VECTOR(v, index) expression scalar;                                      \
+        check(VECTOR(result, index) == VECTOR(result, index),                                            \
+              "Operation %f " #expression " %f is %f", VECTOR(v, index), scalar, VECTOR(result, index)); \
+    }
 
 /* Life Cycle */
 static
@@ -151,7 +154,7 @@ vector_create(size_t size) {
     vector *instance = malloc(sizeof(vector));
     float *values = calloc(size, sizeof(float));
     check_memory(instance);
-    check_memory(values)
+    check_memory(values);
 
     instance->type = VECTOR_TYPE;
     instance->size = size;
@@ -200,7 +203,7 @@ vector_create_from_list_char(size_t size, char **values) {
     instance->values = malloc(vector_size);
     check_memory(instance->values);
     
-    VECTOR_FOREACH(instance) {
+    vector_foreach(instance) {
         if(atof(values[index]) == false) {
             is_hash = true;
             break;
@@ -237,7 +240,7 @@ error:
 static
 vector *
 vector_copy(vector *original) {
-    VECTOR_CHECK(original);
+    vector_check(original);
     
     return vector_create_from_list(original->size, original->values);
 
@@ -248,7 +251,7 @@ error:
 static
 vector *
 vector_reshape(vector *instance, size_t size) {
-    VECTOR_CHECK(instance);
+    vector_check(instance);
     check(size, "Vector size should be greater than zero.");
     
     instance->values = realloc(instance->values, size * sizeof(float));
@@ -292,9 +295,9 @@ error:
 static
 vector *
 vector_seed(vector *instance, float default_value) {
-    VECTOR_CHECK(instance);
+    vector_check(instance);
     
-    VECTOR_FOREACH(instance) {
+    vector_foreach(instance) {
         if(default_value) {
             VECTOR(instance, index) = default_value;
         } else {
@@ -316,7 +319,7 @@ vector_hash_list(size_t size, char **list) {
     hash->keys = uniq_strings(list, size, &hash->size);
     hash->index = vector_create(size);
     
-    VECTOR_FOREACH(hash->index) {
+    vector_foreach(hash->index) {
         size_t key_index = 0;
         while(hash->keys[key_index]) {
             if(strcmp(hash->keys[key_index], list[index]) == 0) {
@@ -336,7 +339,7 @@ vector_hash_list(size_t size, char **list) {
 static
 vector *
 vector_addition_cast(vector *v, void *term) {
-    VECTOR_CHECK(v);
+    vector_check(v);
     
     if(IS(term, VECTOR_TYPE)) {
         return vector_addition(v, (vector *)term);
@@ -352,11 +355,11 @@ error:
 static
 vector *
 vector_addition(vector *v, vector *w) {
-    VECTOR_CHECK(v);
-    VECTOR_CHECK(w);
-    
+    vector_check(v);
+    vector_check(w);
+    check(v->size == w->size, "Vector size doesn't match");
     VECTOR_OPERATION(v, v, w, +);
-    
+
     return v;
 
 error:
@@ -366,7 +369,7 @@ error:
 static
 vector *
 vector_scalar_addition(vector *v, float scalar) {
-    VECTOR_CHECK(v);
+    vector_check(v);
     VECTOR_SCALAR_OPERATION(v, v, scalar, +);
     
     return v;
@@ -380,7 +383,7 @@ error:
 static
 vector *
 vector_substraction_cast(vector *v, void *subtrahend) {
-    VECTOR_CHECK(v);
+    vector_check(v);
     
     if(IS(subtrahend, VECTOR_TYPE)) {
         return vector_substraction(v, (vector *)subtrahend);
@@ -396,8 +399,8 @@ error:
 static
 vector *
 vector_substraction(vector *v, vector *w) {
-    VECTOR_CHECK(v);
-    VECTOR_CHECK(w);
+    vector_check(v);
+    vector_check(w);
     
     VECTOR_OPERATION(v, v, w, -);
     
@@ -410,7 +413,7 @@ error:
 static
 vector *
 vector_scalar_substraction(vector *v, float scalar) {
-    VECTOR_CHECK(v);
+    vector_check(v);
     VECTOR_SCALAR_OPERATION(v, v, scalar, -);
     
     return v;
@@ -423,7 +426,7 @@ error:
 static
 vector *
 vector_multiplication_cast(vector *v, void *factor) {
-    VECTOR_CHECK(v);
+    vector_check(v);
     return vector_vector_multiplication(v, (vector *)factor);
     
 error:
@@ -433,10 +436,11 @@ error:
 static
 vector *
 vector_vector_multiplication(vector *v, vector *w) {
-    VECTOR_CHECK(v);
-    VECTOR_CHECK(w);
+    vector_check(v);
+    vector_check(w);
+    check(v->size == w->size, "Vectors size doesn't match");
     VECTOR_OPERATION(v, v, w, *);
-    
+
     return v;
 
 error:
@@ -446,7 +450,7 @@ error:
 static
 vector *
 vector_scalar_multiplication(vector *v, float scalar) {
-    VECTOR_CHECK(v);
+    vector_check(v);
     VECTOR_SCALAR_OPERATION(v, v, scalar, *);
     
     return v;
@@ -460,7 +464,7 @@ error:
 static
 vector *
 vector_division_cast(vector *v, void *divider) {
-    VECTOR_CHECK(v);
+    vector_check(v);
     
     if(IS(divider, VECTOR_TYPE)) {
         return vector_vector_division(v, (vector *)divider);
@@ -476,7 +480,7 @@ error:
 static
 vector *
 vector_vector_division(vector *v, vector *w) {
-    VECTOR_CHECK(v);
+    vector_check(v);
     VECTOR_OPERATION(v, v, w, /);
     
     return v;
@@ -488,7 +492,7 @@ error:
 static
 vector *
 vector_scalar_division(vector *v, float scalar) {
-    VECTOR_CHECK(v);
+    vector_check(v);
     VECTOR_SCALAR_OPERATION(v, v, scalar, /);
     
     return v;
@@ -501,12 +505,12 @@ error:
 static
 float
 vector_dot_product(vector *v, vector *w) {
-    VECTOR_CHECK(v);
-    VECTOR_CHECK(w);
+    vector_check(v);
+    vector_check(w);
     
     float product = 0;
     
-    VECTOR_FOREACH(v) {
+    vector_foreach(v) {
         product += VECTOR(v, index) * VECTOR(w, index);
     }
     
@@ -520,9 +524,9 @@ error:
 static
 vector *
 vector_map(vector *v, double operation(double)) {
-    VECTOR_CHECK(v);
+    vector_check(v);
 
-    VECTOR_FOREACH(v) {
+    vector_foreach(v) {
         VECTOR(v, index) = (float)operation((double)VECTOR(v, index));
     }
     
@@ -535,9 +539,9 @@ error:
 static
 vector *
 vector_map_param(vector *v, float operation(float, float*), float *operation_params) {
-    VECTOR_CHECK(v);
+    vector_check(v);
 
-    VECTOR_FOREACH(v) {
+    vector_foreach(v) {
         VECTOR(v, index) = operation(VECTOR(v, index), operation_params);
     }
     
@@ -552,9 +556,9 @@ error:
 static
 int
 vector_index_of(vector *v, float needle) {
-    VECTOR_CHECK(v);
+    vector_check(v);
 
-    VECTOR_FOREACH(v) {
+    vector_foreach(v) {
         if(VECTOR(v, index) == needle) {
             return (int)index;
         }
@@ -569,7 +573,7 @@ error:
 static
 float
 vector_length(vector *v) {
-    VECTOR_CHECK(v);
+    vector_check(v);
 
     return sqrt(vector_dot_product(v, v));
 
@@ -581,11 +585,11 @@ error:
 static
 float
 vector_sum(vector *v) {
-    VECTOR_CHECK(v);
+    vector_check(v);
     
     float sum = 0;
     
-    VECTOR_FOREACH(v) {
+    vector_foreach(v) {
         sum += VECTOR(v, index);
     }
     
@@ -598,11 +602,11 @@ error:
 static
 float
 vector_sum_to(vector *v, size_t to_index) {
-    VECTOR_CHECK(v);
+    vector_check(v);
     
     float sum = 0;
     
-    VECTOR_FOREACH(v) {
+    vector_foreach(v) {
         sum += VECTOR(v, index);
         if(index == to_index) {
             return sum;
@@ -618,7 +622,7 @@ error:
 static
 float
 vector_sum_between(vector *v, size_t from_index, size_t to_index) {
-    VECTOR_CHECK(v);
+    vector_check(v);
 
     float sum = 0;
     
@@ -636,7 +640,7 @@ error:
 static
 vector *
 vector_unit(vector *v) {
-    VECTOR_CHECK(v);
+    vector_check(v);
 
     float length = vector_length(v);
     
@@ -650,7 +654,7 @@ error:
 static
 float
 vector_l_norm(vector *v, int p) {
-    VECTOR_CHECK(v);
+    vector_check(v);
     check(p, "P = 0 for L_norm");
     
     float l_norm = 0;
@@ -672,7 +676,7 @@ error:
 static
 float
 vector_max_norm(vector *v) {
-    VECTOR_CHECK(v);
+    vector_check(v);
 
     float max = 0;
     
@@ -694,8 +698,8 @@ error:
 static
 float
 vector_angle(vector *v, vector *w) {
-    VECTOR_CHECK(v);
-    VECTOR_CHECK(w);
+    vector_check(v);
+    vector_check(w);
     
     float cosine = vector_dot_product(v, w) / (vector_length(v) * vector_length(w));
     
@@ -710,8 +714,8 @@ error:
 static
 enum bool
 vector_is_perpendicular(vector *v, vector *w) {
-    VECTOR_CHECK(v);
-    VECTOR_CHECK(w);
+    vector_check(v);
+    vector_check(w);
 
     float dot_product = vector_dot_product(v, w);
     
@@ -726,8 +730,8 @@ error:
 static
 enum bool
 vector_is_equal(vector *v, vector *w) {
-    VECTOR_CHECK(v);
-    VECTOR_CHECK(w);
+    vector_check(v);
+    vector_check(w);
     
     enum bool is_equal = v->size == w->size
     && memcmp(v->values, w->values, v->size) == 0;
@@ -743,11 +747,11 @@ error:
 static
 void
 vector_print(vector *instance) {
-    VECTOR_CHECK(instance);
+    vector_check(instance);
     
     printf("\tVector size = %d\n\t\t[\t", (int)instance->size);
     
-    VECTOR_FOREACH(instance) {
+    vector_foreach(instance) {
         if(index < 5 || index > instance->size - 5) {
             printf("%.4f,\n\t\t\t", VECTOR(instance, index));
         }
@@ -774,7 +778,7 @@ vector_create_ui() {
     vector *v = vector_create((size_t)size);
     
     if(size < 10) {
-        VECTOR_FOREACH(v) {
+        vector_foreach(v) {
             int number;
             
             printf("%d: ", (int)index);

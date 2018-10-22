@@ -103,7 +103,7 @@ sigmoid_derivative(neuron_context *context) {
     sigmoid_value = Vector.mul(sigmoid_value, one_minus_sigmoid);
     Vector.delete(one_minus_sigmoid);
     
-    return one_minus_sigmoid;
+    return sigmoid_value;
 }
 
 
@@ -143,22 +143,33 @@ relu_derivative_context(neuron_context *context) {
 static
 vector *
 tanh_context(neuron_context *context) {
-    return Vector.map(Vector.copy(context->body.transfer),
-                      tanh);
+    vector_check(context->body.transfer);
+    vector *activation = Vector.map(Vector.copy(context->body.transfer),
+                                    tanh);
+    vector_check(activation);
+    return activation;
+error:
+    return NULL;
 }
 
 static
 vector *
 tanh_derivative(neuron_context *context) {
+    vector_check(context->body.activation);
     vector *prime = Vector.map(Vector.copy(context->body.activation),
                                tanh);
     prime = Vector.mul(prime, prime);
     
-    return Vector.num.add(
+    prime = Vector.num.add(
                           Vector.num.mul(prime, -1),
                           1);
-}
+    vector_check(prime);
 
+    return prime;
+
+error:
+    return NULL;
+}
 
 /* Softmax */
 static
@@ -173,11 +184,11 @@ soft_max(neuron_context *context) {
     for(size_t sample = 0; sample < number_of_samples; sample++) {
         float layer_exp_sum = 0;
         for (vector ***axon = context->layer.axon; *axon; axon++ ){
-            VECTOR_CHECK_PRINT(**axon, "Axon vector in layer is broken");
+            vector_check_print(**axon, "Axon vector in layer is broken");
             float layer_axon_value_of_sample = VECTOR(**axon, sample);
             layer_exp_sum += exp(layer_axon_value_of_sample);
         }
-        VECTOR_CHECK_PRINT(context->body.activation, "Activation of context is broken");
+        vector_check_print(context->body.activation, "Activation of context is broken");
         float axon_value_of_sample = VECTOR(context->body.activation, sample);
         VECTOR(activation, sample) = exp(axon_value_of_sample) / layer_exp_sum;
     }
@@ -198,11 +209,11 @@ soft_max_derivative(neuron_context *context) {
     for(size_t sample = 0; sample < number_of_samples; sample++) {
         float layer_exp_sum = 0;
         for (vector ***axon = context->layer.axon; *axon; axon++ ){
-            VECTOR_CHECK_PRINT(**axon, "Axon vector in layer is broken");
+            vector_check_print(**axon, "Axon vector in layer is broken");
             float layer_axon_value_of_sample = VECTOR(**axon, sample);
             layer_exp_sum += exp(layer_axon_value_of_sample);
         }
-        VECTOR_CHECK_PRINT(context->body.activation, "Activation of context is broken");
+        vector_check_print(context->body.activation, "Activation of context is broken");
 
         float axon_value_of_sample = VECTOR(context->body.activation, sample);
         float exp_axon_value = exp(axon_value_of_sample);

@@ -103,11 +103,13 @@ const struct matrix_library Matrix = {
 
 
 /* Marcos */
-#define MATRIX_OPERATION(A, B, expression) \
-    MATRIX_FOREACH(A) { \
-        MATRIX(A, row, column) = MATRIX(A, row, column) expression MATRIX(B, row, column); \
-    } \
-
+#define MATRIX_OPERATION(A, B, expression)                                                             \
+    matrix_foreach(A)                                                                                  \
+    {                                                                                                  \
+        MATRIX(A, row, column) = MATRIX(A, row, column) expression MATRIX(B, row, column);             \
+        check(MATRIX(A, row, column) == MATRIX(A, row, column),                                        \
+              "Operation x " #expression " %f is %f", MATRIX(B, row, column), MATRIX(A, row, column)); \
+    }
 
 /* Life Cycle */
 static
@@ -125,7 +127,7 @@ matrix_create(size_t rows, size_t columns) {
 static
 matrix *
 matrix_copy(matrix *original) {
-    MATRIX_CHECK(original);
+    matrix_check(original);
     matrix *instance = malloc(sizeof(matrix));
     instance->type = MATRIX_TYPE;
     instance->rows = original->rows;
@@ -141,7 +143,7 @@ error:
 static
 matrix *
 matrix_reshape(matrix *instance, size_t rows, size_t columns) {
-    MATRIX_CHECK(instance);
+    matrix_check(instance);
     check(rows > 0 && columns > 0, "Invalid matrix shape");
     instance->rows = rows;
     instance->columns = columns;
@@ -156,7 +158,7 @@ error:
 static
 void
 matrix_delete(matrix *instance) {
-    MATRIX_CHECK(instance);
+    matrix_check(instance);
     Vector.delete(instance->vector);
     free(instance);
 
@@ -169,7 +171,7 @@ error:
 static
 matrix *
 matrix_seed(matrix *instance, float default_value) {
-    MATRIX_CHECK(instance);
+    matrix_check(instance);
     Vector.seed(instance->vector, default_value);
     
     return instance;
@@ -226,7 +228,7 @@ error:
 static
 matrix *
 matrix_from_vector(vector *v, size_t columns) {
-    VECTOR_CHECK(v);
+    vector_check(v);
     check(columns, "Matrix should have at least one column");
     matrix *instance = matrix_create(v->size / columns, columns);
     Vector.delete(instance->vector);
@@ -241,7 +243,7 @@ error:
 static
 matrix *
 matrix_diagonal_from_vector(vector *v) {
-    VECTOR_CHECK(v);
+    vector_check(v);
     matrix *A = matrix_create(v->size, v->size);
     size_t index = v->size;
     
@@ -264,7 +266,7 @@ matrix_from_vectors(vector **vectors, size_t rows, size_t columns) {
     
     matrix *joined = matrix_create(rows, columns);
     
-    MATRIX_FOREACH(joined) {
+    matrix_foreach(joined) {
         MATRIX(joined, row, column) = VECTOR(vectors[row], column);
     }
     
@@ -313,7 +315,7 @@ error:
 static
 vector *
 matrix_column_vector(matrix *A, size_t column) {
-    MATRIX_CHECK(A);
+    matrix_check(A);
     
     size_t vector_size = A->rows;
     vector *column_vector = Vector.create(vector_size);
@@ -332,7 +334,7 @@ error:
 static
 matrix *
 matrix_transpose(matrix *instance) {
-    MATRIX_CHECK(instance);
+    matrix_check(instance);
     
     size_t instance_rows = instance->rows;
     size_t transposed_rows = instance->columns;
@@ -366,7 +368,7 @@ matrix_transpose(matrix *instance) {
         matrix_delete(transposed);
     }
     
-    MATRIX_CHECK(instance);
+    matrix_check(instance);
     
     return instance;
 
@@ -376,8 +378,8 @@ error:
 
 vector *
 vector_transformation_by_matrix(matrix *A, vector *x) {
-    MATRIX_CHECK(A);
-    VECTOR_CHECK(x);
+    matrix_check(A);
+    vector_check(x);
     
     vector *transormed_vector = Vector.create(A->rows);
     
@@ -425,11 +427,11 @@ matrix_multiplication_cast(matrix *A, void *some_b) {
 static
 matrix *
 matrix_multiplication(matrix *A, matrix *B) {
-    MATRIX_CHECK(A);
-    MATRIX_CHECK(B);
+    matrix_check(A);
+    matrix_check(B);
     matrix *multiplicated = matrix_create(A->rows, B->columns);
     
-    MATRIX_FOREACH(multiplicated) {
+    matrix_foreach(multiplicated) {
         size_t index = A->columns > 1
         ? B->rows
         : A->columns;
@@ -451,7 +453,7 @@ error:
 static
 matrix *
 matrix_scalar_multiplication(matrix *A, float scalar) {
-    MATRIX_CHECK(A);
+    matrix_check(A);
     Vector.mul(A->vector, &scalar);
     
     return A;
@@ -479,8 +481,8 @@ matrix_division_cast(matrix *A, void *some_b) {
 static
 matrix *
 matrix_division(matrix *A, matrix *B) {
-    MATRIX_CHECK(A);
-    MATRIX_CHECK(B);
+    matrix_check(A);
+    matrix_check(B);
     MATRIX_OPERATION(A, B, /);
     
     return A;
@@ -492,7 +494,7 @@ error:
 static
 matrix *
 matrix_scalar_division(matrix *A, float scalar) {
-    MATRIX_CHECK(A);
+    matrix_check(A);
     Vector.div(A->vector, &scalar);
     
     return A;
@@ -520,8 +522,8 @@ matrix_addition_cast(matrix *A, void *some_b) {
 static
 matrix *
 matrix_addition(matrix *A, matrix *B) {
-    MATRIX_CHECK(A);
-    MATRIX_CHECK(B);
+    matrix_check(A);
+    matrix_check(B);
     MATRIX_OPERATION(A, B, +);
     
     return A;
@@ -533,7 +535,7 @@ error:
 static
 matrix *
 matrix_scalar_addition(matrix *A, float scalar) {
-    MATRIX_CHECK(A);
+    matrix_check(A);
     Vector.add(A->vector, &scalar);
     
     return A;
@@ -561,8 +563,8 @@ matrix_substraction_cast(matrix *A, void *some_b) {
 static
 matrix *
 matrix_substraction(matrix *A, matrix *B) {
-    MATRIX_CHECK(A);
-    MATRIX_CHECK(B);
+    matrix_check(A);
+    matrix_check(B);
     MATRIX_OPERATION(A, B, -);
     
     return A;
@@ -574,7 +576,7 @@ error:
 static
 matrix *
 matrix_scalar_substraction(matrix *A, float scalar) {
-    MATRIX_CHECK(A);
+    matrix_check(A);
     Vector.sub(A->vector, &scalar);
     
     return A;
@@ -587,8 +589,8 @@ error:
 static
 matrix *
 matrix_map(matrix *A, float operation(float)) {
-    MATRIX_CHECK(A);
-    MATRIX_FOREACH(A) {
+    matrix_check(A);
+    matrix_foreach(A) {
         MATRIX(A, row, column) = operation(MATRIX(A, row, column));
     }
     
@@ -602,7 +604,7 @@ error:
 static
 float
 matrix_sum(matrix *A) {
-    MATRIX_CHECK(A);
+    matrix_check(A);
     
     return Vector.sum.all(A->vector);
     
@@ -613,7 +615,7 @@ error:
 static
 float
 matrix_trace(matrix *A) {
-    MATRIX_CHECK(A);
+    matrix_check(A);
     
     float sum = 0;
     
@@ -631,7 +633,7 @@ error:
 static
 float
 matrix_frobenius_norm(matrix *A) {
-    MATRIX_CHECK(A);
+    matrix_check(A);
     
     matrix *product = matrix_copy(A);
     MATRIX_OPERATION(product, product, *);
@@ -649,7 +651,7 @@ error:
 static
 float
 matrix_frobenius_norm_by_trace(matrix *A) {
-    MATRIX_CHECK(A);
+    matrix_check(A);
     
     matrix *AT = matrix_copy(A);
     matrix_transpose(AT);
@@ -671,8 +673,8 @@ error:
 /* Relations */
 enum bool
 matrix_is_equal(matrix *A, matrix *B) {
-    MATRIX_CHECK(A);
-    MATRIX_CHECK(B);
+    matrix_check(A);
+    matrix_check(B);
     
     return Vector.rel.is_equal(A->vector, B->vector);
     
@@ -684,13 +686,13 @@ error:
 static
 void
 matrix_print(matrix *instance) {
-    MATRIX_CHECK(instance);
+    matrix_check(instance);
     
     size_t previous_row = 0;
     
     printf("\tMatrix: %dx%d\n\t\t[[\t", (int)((int)instance->vector->size / (int)instance->columns), (int)instance->columns);
     
-    MATRIX_FOREACH(instance) {
+    matrix_foreach(instance) {
         enum bool is_head_or_tail = row < 5 || row > instance->rows - 5;
         enum bool is_middle = row == 6;
         enum bool is_shown = is_head_or_tail || is_middle;

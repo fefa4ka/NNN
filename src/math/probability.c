@@ -200,7 +200,7 @@ __probability_space_count_events(P_space *space) {
 static
 P_space *
 __probability_space_count_events_occurs(P_space *space) {
-    MATRIX_FOREACH(space->samples) {
+    matrix_foreach(space->samples) {
         int event_index = Vector.prop.index_of(space->events[column], MATRIX(space->samples, row, column));        
         VECTOR(space->occurs[column], (size_t)event_index) += 1;
     }
@@ -374,7 +374,7 @@ probability_covariance(P_space *space, char *field, char *related_field)
     float covariance = 0;
     
     
-    VECTOR_FOREACH(origin) {
+    vector_foreach(origin) {
         float x = VECTOR(origin, index);
         float y = VECTOR(related, index);
         float values[] = {x, y};

@@ -15,7 +15,7 @@ char *matrix_create() {
 char *matrix_delete() {
     Matrix.delete(M);
 
-    MATRIX_CHECK(M);
+    matrix_check(M);
 
     return "Matrix valid after delete";
 error:
@@ -25,23 +25,23 @@ error:
 char *vector_transpose_test() {
     vector *v = Vector.create(random_range(1, 1000));
     vector *w = Vector.create(random_range(1, 1000));
-    VECTOR_CHECK(v);
-    VECTOR_CHECK(w);
+    vector_check(v);
+    vector_check(w);
 
     matrix *V = Matrix.from(v, v->size, 1);
     matrix *W = Matrix.from(v, v->size, 1);
-    MATRIX_CHECK(V);
-    MATRIX_CHECK(W);
+    matrix_check(V);
+    matrix_check(W);
 
     matrix *vT = Matrix.transpose(Matrix.copy(V));
     matrix *wT = Matrix.transpose(Matrix.copy(W));
-    MATRIX_CHECK(vT);
-    MATRIX_CHECK(wT);
+    matrix_check(vT);
+    matrix_check(wT);
 
     matrix *vT_W = Matrix.mul(Matrix.copy(vT), W);
     matrix *wT_V = Matrix.mul(Matrix.copy(wT), V);
-    MATRIX_CHECK(vT_W);
-    MATRIX_CHECK(wT_V);
+    matrix_check(vT_W);
+    matrix_check(wT_V);
 
     test_assert(Matrix.rel.is_equal(vT_W, wT_V), "vT * w != wT * v");
     
