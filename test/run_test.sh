@@ -1,5 +1,5 @@
 echo "Runnig unit tests:"
-echo "------------------"
+echo "------------------\n"
 
 for i in test/*_test
 do
@@ -7,7 +7,7 @@ do
     then
         if $VALGRIND ./$i 2>> test/process.log
         then
-           echo "----------"
+           echo "\n----------"
         else
            echo "[FAILED] ./$i: Read more test/process.log\n"
         fi
