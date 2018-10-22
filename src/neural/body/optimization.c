@@ -25,26 +25,29 @@ optimization_back_propagation(neural_cell *cell) {
     vector *base_error = *cell->axon
                             ? Vector.create(body->signal->rows)
                             : Vector.copy(cell->body.error);
-    VECTOR_CHECK_PRINT(base_error, "Base error (Eo) vector for back propagate is broken");
-    
+    vector_check_print(base_error, "Base error (Eo) vector for back propagate is broken");
+    vector_values_check(base_error);
+
     // Eo — error from the neurons in front
     size_t axon_dimension = 0;
-    for(neural_cell *axon = *cell->axon; axon; axon++) {
-        NEURON_CELL_CHECK(axon, "Broken cell in axon terminal");
+    for(neural_cell *axon = *cell->axon; cell->axon[axon_dimension]; axon++) {
+        neuron_ccheck(axon, "Broken cell in axon terminal");
+        size_t signal_dimension = axon->body.signal->columns;
         
-        size_t index = 0;
-        for(neural_cell *needle = *axon->synapse; needle; needle++) {
-            if(needle == cell) {
+        for(size_t index = 0; index < signal_dimension; index++) {
+            if(axon->synapse[index] == cell) {
                 // En = Ei * Wi
-                struct neuron_state front_prime = needle->context->prime;
+                struct neuron_state front_prime = axon->context->prime;
                 vector *front_error = front_prime.error;
-                VECTOR_CHECK_PRINT(front_error, "Front neuron %zdx%zd error vector is broken", axon->coordinates.layer, axon->coordinates.position);
+                vector_values_check(front_error);
+                vector_check_print(front_error, "Error vector of front neuron %zdx%zd", axon->coordinates.layer, axon->coordinates.position);
                 front_error = Vector.num.mul(front_error, MATRIX(front_prime.weight, index, 0));
                 // Eo += En
+                vector_values_check(base_error);
                 base_error = Vector.add(base_error, front_error);
+                vector_values_check(base_error);
                 axon_dimension++;
             }
-            index++;
         }
     }
 
@@ -52,31 +55,44 @@ optimization_back_propagation(neural_cell *cell) {
         // Eo = SUM(En) / Number of cells in axon terminal
         check(axon_dimension, "Axon dimension is 0 when pointer to axon exists");
         base_error = Vector.num.div(base_error, axon_dimension);
+        vector_values_check(base_error);
     }
+
+    vector_check(base_error);
     
-    // R'(Z)
-    vector *activation_derivative = cell->body.nucleus.activation.derivative(cell->context);
-    
-    // E = Eo * R'(Z) * ... - current layer error
-    base_error = Vector.mul(base_error, activation_derivative);
-    
+
     // Z'(X)
     matrix *transfer_derivative_over_signal = cell->body.nucleus.transfer.derivative(cell->context, false);
+    matrix_check(transfer_derivative_over_signal);
     
     // Z'(W)? - if last layer, W is 1
     matrix *transfer_derivative_over_weight = *cell->axon
         ? Matrix.seed(Matrix.create(body->weight->rows, body->weight->columns), 1)
         : cell->body.nucleus.transfer.derivative(cell->context, true);
+    matrix_check(transfer_derivative_over_weight);
+    
+    // R'(Z)
+    vector *activation_derivative = cell->body.nucleus.activation.derivative(cell->context);
+    vector_check(activation_derivative);
+    vector_values_check(activation_derivative);
+    vector_values_check(base_error);
+    // E = Eo * R'(Z) * ... - current layer error
+    base_error = Vector.mul(base_error, activation_derivative);
+    vector_values_check(base_error);
     
     // C'(W) = E * Z'(X)
     matrix *cost_weight_prime = Matrix.copy(body->weight);
-    MATRIX_FOREACH(cost_weight_prime) {
-        vector *cw_cell_prime = Vector.mul(base_error,
-                                   Matrix.column(transfer_derivative_over_signal, row));
-        MATRIX(cost_weight_prime, row, column) = Vector.sum.all(cw_cell_prime) / cw_cell_prime->size;
-        Vector.delete(prime);
+    vector_values_check(transfer_derivative_over_signal->vector);
+    matrix_foreach(cost_weight_prime) {
+        float term = MATRIX(transfer_derivative_over_signal, row, column);
+        
+        vector *cw_prime = Vector.num.mul(Vector.copy(base_error),
+                                          term);
+        MATRIX(cost_weight_prime, row, column) = Vector.sum.all(cw_prime) / cw_prime->size;
+        Vector.delete(cw_prime);
     }
-    
+    matrix_check(cost_weight_prime);
+    vector_values_check(cost_weight_prime->vector);
     // Garbage Control
     if(prime->activation) {
         Vector.delete(prime->activation);
@@ -91,8 +107,8 @@ optimization_back_propagation(neural_cell *cell) {
     prime->transfer = Vector.copy(transfer_derivative_over_weight->vector);
     prime->activation = activation_derivative;
     prime->weight = cost_weight_prime;
-    prime->error = base_error;
-    
+    prime->error = base_error;    
+
 error:
     return;
 }
@@ -126,13 +142,13 @@ error:
 //    // Eo - Traversal neurons error in front
 //    size_t axon_dimension = 0;
 //    while(cell->axon[axon_dimension]) {
-//        NEURON_CELL_CHECK(cell->axon[axon_dimension], "Broken cell in axon %zd terminal", axon_dimension);
+//        neuron_ccheck(cell->axon[axon_dimension], "Broken cell in axon %zd terminal", axon_dimension);
 //        neural_cell *axon_cell = cell->axon[axon_dimension];
 //        vector *axon_transfer_signal_derivative = Vector.seed(Vector.create(cell->body.signal->rows),
 //                                                              1);
 //        size_t cell_in_synapse_index = 0;
 //        while(axon_cell->synapse[cell_in_synapse_index]) {
-//            NEURON_CELL_CHECK(axon_cell->synapse[cell_in_synapse_index], "Broken cell in axon (%zdx%zd) terminal -> %zd synapse terminal", axon_cell->coordinates.layer, axon_cell->coordinates.position, cell_in_synapse_index);
+//            neuron_ccheck(axon_cell->synapse[cell_in_synapse_index], "Broken cell in axon (%zdx%zd) terminal -> %zd synapse terminal", axon_cell->coordinates.layer, axon_cell->coordinates.position, cell_in_synapse_index);
 //            if(axon_cell->synapse[cell_in_synapse_index] == cell) {
 //                for(size_t sample = 0; sample < axon_transfer_signal_derivative->size; sample++) {
 //                    VECTOR(axon_transfer_signal_derivative, sample) = MATRIX(axon_cell->context->prime.signal,
@@ -281,41 +297,47 @@ error:
     //    return jacobian;
 //    }
 
-    static float *
-    optimization_sgd(void *_cell, float learning_rate, float *params)
-    {
-        neural_cell *cell = (neural_cell *)_cell;
-        struct neuron_state *body = &cell->context->body;
-        struct neuron_state *prime = &cell->context->prime;
-        
-        // x - input
-        // Eo - previous error
-        // m - number of examples
-        // W - weight
-        // dW - delta for weight update
-        // B - bias
+static float *
+optimization_sgd(void *_cell, float learning_rate, float *params)
+{
+    neural_cell *cell = (neural_cell *)_cell;
+    struct neuron_state *body = &cell->context->body;
+    struct neuron_state *prime = &cell->context->prime;
+    
+    // x - input
+    // Eo - previous error
+    // m - number of examples
+    // W - weight
+    // dW - delta for weight update
+    // B - bias
 
-        // Eo
-        optimization_back_propagation(cell);
+    // Eo
+    optimization_back_propagation(cell);
 
-        // dW = x * Eo
-        matrix *delta_weight = Matrix.mul(Matrix.copy(body->weight),
-                                          prime->weight);
-        // dW = dW * learnin_rate
-        Vector.num.mul(delta_weight->vector, learning_rate);
-  
-        // W = W - dW
-        cell->body.weight = Matrix.sub(body->weight,
-                                       delta_weight);
-        body->weight = cell->body.weight;
-        
-        // B = B - Eo / m
-        cell->body.bias -= learning_rate
-                           * Vector.sum.all(body->error) / body->error->size;
-        body->bias = cell->body.bias;
-        
-        // Garbage Conrol
-        Matrix.delete(delta_weight);
+    // dW = x * Eo
+    vector_values_check(body->weight->vector);
+    vector_values_check(prime->weight->vector);
+    matrix *delta_weight = Matrix.mul(Matrix.copy(body->weight),
+                                     prime->weight);
+    // dW = dW * learnin_rate
+    Vector.num.mul(delta_weight->vector, learning_rate);
+    matrix_check(delta_weight);
+    // W = W - dW
+    cell->body.weight = Matrix.sub(body->weight,
+                                  delta_weight);
+    body->weight = cell->body.weight;
+    matrix_check(body->weight);
 
-        return params;
+    // B = B - Eo / m
+    cell->body.bias -= learning_rate
+                      * Vector.sum.all(body->error) / body->error->size;
+    body->bias = cell->body.bias;
+
+    // Garbage Conrol
+    Matrix.delete(delta_weight);
+
+    return params;
+
+error:
+    return NULL;
 }
