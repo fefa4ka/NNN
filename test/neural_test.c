@@ -18,8 +18,8 @@ char *data_load()
 
 char *network_test(neural_network *network){
     test_assert(network->resolution.layers == 3, "Layers number is not as expected");
-    test_assert(network->resolution.size == 34, "Network size is different than expected %zd != %d", network->resolution.size, 34);
-    NETWORK_CHECK(network);
+    test_assert(network->resolution.size == 36, "Network size is different than expected %zd != %d", network->resolution.size, 34);
+    network_check(network);
     
     return NULL;
 error:
@@ -28,10 +28,18 @@ error:
 
 char *network_create()
 {
-    neuron_kernel perceptron = {
+    neuron_kernel input = {
         Transfer.linear,
         Aggregation.sum,
-        Activation.tanh,
+        Activation.relu,
+        Cost.mean_squared,
+        Optimization.sgd
+    };
+    
+    neuron_kernel hidden = {
+        Transfer.linear,
+        Aggregation.sum,
+        Activation.sigmoid,
         Cost.mean_squared,
         Optimization.sgd
     };
@@ -39,26 +47,26 @@ char *network_create()
     neuron_kernel output = {
         Transfer.linear,
         Aggregation.sum,
-        Activation.sigmoid,
+        Activation.soft_max,
         Cost.mean_squared,
         Optimization.sgd
     };
 
    neural_layer layers[] = {
         {
-            .kernel = perceptron,
+            .kernel = input,
             .router = Router.any,
-            .dimension = 30
+            .dimension = 16
         },
         {
-            .kernel = perceptron,
+            .kernel = hidden,
             .router = Router.any,
-            .dimension = 2
+            .dimension = 16
         },
         {
             .kernel = output,
             .router = Router.any,
-            .dimension = 2
+            .dimension = 4
         },
 
         { .dimension = 0 }
@@ -78,10 +86,10 @@ char *network_create()
 char *neuron_layer() {
      for (int try = 0; try < 1000; try++) {
         size_t random_index = (size_t)random_range(0, network.resolution.size);
-        neural_cell *cell = &(network.neurons[random_index]);
-        NEURON_CELL_CHECK(cell, "Random cell %zd from network broken", random_index);
+        neural_cell *cell = network.neurons[random_index];
+        neuron_ccheck(cell, "Random cell %zd from network broken", random_index);
         neural_cell **layer_neurons = Neuron.context.layer(cell);
-        NEURONS_CHECK(layer_neurons, "Layer for %zdx%zd neuron is broken", cell->coordinates.layer, cell->coordinates.position);
+        neurons_check(layer_neurons, "Layer for %zdx%zd neuron is broken", cell->coordinates.layer, cell->coordinates.position);
         free(layer_neurons);
      }
 
@@ -93,8 +101,9 @@ error:
 char *neuron_create_context() {
     for (int try = 0; try < 1000; try++) {
         size_t random_index = (size_t)random_range(0, network.resolution.size);
-        neural_cell *cell = &(network.neurons[random_index]);
-        neuron_context *context = Neuron.context.create(cell);
+        neural_cell *cell = network.neurons[random_index];
+        neural_cell **layer_cells = Network.get.layer(&network, cell->coordinates.layer);
+        neuron_context *context = Neuron.context.create(cell, layer_cells);
         Neuron.context.delete(context);
     }
 
@@ -106,14 +115,14 @@ char *network_fire() {
     for (size_t i = 0; i < 1000; i++)
     {
         axon = Network.fire(&network, iris_nn.test->features.values);
-        MATRIX_CHECK(axon);
+        matrix_check(axon);
         test_assert(axon->rows == iris_nn.test->features.values->rows, "Sample size doesn't same in input and output.");
-        test_assert(axon->columns == 2, "Axon dimension is not as expected");
+        test_assert(axon->columns == 4, "Axon dimension is not as expected");
         char *network_test_result = network_test(&network);
         test_assert(network_test_result == NULL, "%s", network_test_result);
 
         matrix *error = Network.error(&network, iris_nn.test->features.values, iris_nn.test->target.values, false);
-        MATRIX_CHECK(error);
+        matrix_check(error);
         test_assert(error->rows == axon->rows, "Samples size of output and error is different %zd != %zd", axon->rows, error->rows);
 
         Matrix.delete(axon);
@@ -129,8 +138,8 @@ error:
 char *network_error() {
     matrix *axon = axon = Network.fire(&network, iris_nn.test->features.values);
     matrix *error = Network.error(&network, iris_nn.test->features.values, iris_nn.test->target.values, false);
-    MATRIX_CHECK(axon);
-    MATRIX_CHECK(error);
+    matrix_check(axon);
+    matrix_check(error);
     test_assert(error->rows == axon->rows, "Samples size of output and error is different %zd != %zd", axon->rows, error->rows);
 
     Matrix.delete(axon);
