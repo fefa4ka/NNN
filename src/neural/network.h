@@ -15,13 +15,13 @@
 #include "../data/set.h"
 
 #define NEURONS(network, layer) NEURON(network, layer, (size_t)0)
-#define NETWORK_CHECK(network)                                                                                                               \
+#define network_check(network)                                                                                                               \
     for (size_t index = 0; index < network->resolution.size; index++)                                                                        \
     {                                                                                                                                        \
-        neural_cell *cell = &network->neurons[index];                                                                                        \
-        NEURON_CELL_CHECK(cell, "Neuron cell %zd is broken", index);                                                                         \
-        NEURONS_CHECK(cell->synapse, "Neuron cell %zdx%zd synapse terminal is broken", cell->coordinates.layer, cell->coordinates.position); \
-        NEURONS_CHECK(cell->axon, "Neuron cell %zdx%zd axon terminal is broken", cell->coordinates.layer, cell->coordinates.position);       \
+        neural_cell *cell = network->neurons[index];                                                                                        \
+        neuron_ccheck(cell, "Neuron cell %zd is broken", index);                                                                         \
+        neurons_check(cell->synapse, "Neuron cell %zdx%zd synapse terminal is broken", cell->coordinates.layer, cell->coordinates.position); \
+        neurons_check(cell->axon, "Neuron cell %zdx%zd axon terminal is broken", cell->coordinates.layer, cell->coordinates.position);       \
     }
 
 typedef struct {
@@ -31,7 +31,7 @@ typedef struct {
         size_t    size;
     }             resolution;
     
-    neural_cell   *neurons;
+    neural_cell   **neurons;
 } neural_network;
 
 typedef struct {
@@ -48,9 +48,14 @@ struct network_library {
     void                 (*delete)(neural_network *network);
     
     matrix *             (*fire)(neural_network *network, matrix *signal);
-    matrix *             (*error)(neural_network *network, matrix *signal, matrix *target, enum bool derivative);
-    size_t               (*neuron)(neural_network *network, size_t layer, size_t position);
     void                 (*train)(neural_network *network, data_batch *training_data, float learning_rate, int epoch);
+    matrix *             (*error)(neural_network *network, matrix *signal, matrix *target, enum bool derivative);
+    
+    struct {
+        size_t           (*neuron)(neural_network *network, size_t layer, size_t position);
+        neural_cell **   (*layer)(neural_network *network, size_t layer);
+    } get;
+
     struct {
         neural_network * (*add)(neural_cell *axon, neural_cell *synapse);
         neural_network * (*remove)(neural_cell *axon, neural_cell *synapse);
