@@ -127,7 +127,7 @@ static
 void
 __network_build_cell_context(neural_network *network) {
     for(size_t index = 0; index < network->resolution.size; index++) {
-        neural_cell *cell = &network->neurons[index];
+        neural_cell *cell = network->neurons[index];
         neuron_ccheck(cell, "Neuron %zd", index);
         neural_cell **layer_cells = network_get_layer_cells(network, cell->coordinates.layer);
 

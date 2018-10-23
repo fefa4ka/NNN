@@ -404,8 +404,10 @@ neuron *
 neuron_init_weight(neuron *body) {
     NEURON_CHECK(*body, "Init weight");
     size_t dimension_diff = body->signal->columns - body->weight->rows;
+    check(dimension_diff >= 0, "Signal columns should be more or equal to weight rows");
     
-    if(dimension_diff) {
+    if (dimension_diff > 0)
+    {
         Matrix.reshape(body->weight, body->signal->columns, body->weight->columns);
 
         if (dimension_diff > 0) {

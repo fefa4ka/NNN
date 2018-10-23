@@ -154,7 +154,7 @@ vector_create(size_t size) {
     vector *instance = malloc(sizeof(vector));
     float *values = calloc(size, sizeof(float));
     check_memory(instance);
-    check_memory(values);
+    check_memory_print(values, "Size: %lu", size);
 
     instance->type = VECTOR_TYPE;
     instance->size = size;

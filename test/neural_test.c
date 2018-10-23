@@ -18,7 +18,7 @@ char *data_load()
 
 char *network_test(neural_network *network){
     test_assert(network->resolution.layers == 3, "Layers number is not as expected");
-    test_assert(network->resolution.size == 36, "Network size is different than expected %zd != %d", network->resolution.size, 34);
+    test_assert(network->resolution.size == 22, "Network size is different than expected %zd != %d", network->resolution.size, 34);
     network_check(network);
     
     return NULL;
@@ -39,7 +39,7 @@ char *network_create()
     neuron_kernel hidden = {
         Transfer.linear,
         Aggregation.sum,
-        Activation.sigmoid,
+        Activation.relu,
         Cost.mean_squared,
         Optimization.sgd
     };
@@ -47,7 +47,7 @@ char *network_create()
     neuron_kernel output = {
         Transfer.linear,
         Aggregation.sum,
-        Activation.soft_max,
+        Activation.sigmoid,
         Cost.mean_squared,
         Optimization.sgd
     };
@@ -56,7 +56,7 @@ char *network_create()
         {
             .kernel = input,
             .router = Router.any,
-            .dimension = 16
+            .dimension = 2
         },
         {
             .kernel = hidden,
@@ -112,7 +112,7 @@ char *neuron_create_context() {
 
 char *network_fire() {
     matrix *axon;
-    for (size_t i = 0; i < 1000; i++)
+    for (size_t i = 0; i < 10000; i++)
     {
         axon = Network.fire(&network, iris_nn.test->features.values);
         matrix_check(axon);
@@ -176,10 +176,10 @@ char *all_tests() {
     test_run(network_create);
     test_run(data_load);
     test_run(neuron_layer);
-    test_run(neuron_create_context);
+    test_run(neuron_create_context);    
+    test_run(or_train);
     test_run(network_fire);
     test_run(network_error);
-    test_run(or_train);
 
     return NULL;
 }

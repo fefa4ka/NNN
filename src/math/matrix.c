@@ -115,13 +115,18 @@ const struct matrix_library Matrix = {
 static
 matrix *
 matrix_create(size_t rows, size_t columns) {
+    check(rows > 0 && columns > 0, "Wrong matrix size");
     matrix *instance = malloc(sizeof(matrix));
+    check_memory(instance);
     instance->type = MATRIX_TYPE;
     instance->rows = rows;
     instance->columns = columns;
     instance->vector = Vector.create(rows * columns);
     
     return instance;
+
+error:
+    return NULL;
 }
 
 static
