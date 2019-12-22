@@ -33,9 +33,9 @@ router_any(neural_network *network, size_t layer) {
             cell->axon = Network.get.layer(network, layer + 1);
             check_memory(cell->axon);
             
-            free(cell->reverse);
-            cell->reverse = calloc(network->resolution.dimensions[layer + 1], sizeof(enum bool));
-            check_memory(cell->reverse);
+            free(cell->feedback_ready);
+            cell->feedback_ready = calloc(network->resolution.dimensions[layer + 1], sizeof(enum bool));
+            check_memory(cell->feedback_ready);
             
             for(size_t terminal_index = 0; cell->axon[terminal_index]; terminal_index++) {
                 __router_create_synapse(cell, cell->axon[terminal_index]);
@@ -52,6 +52,8 @@ void
 __router_create_synapse(neural_cell *from_cell, neural_cell *to_cell) {
     neuron_ccheck(from_cell, "Broken source cell");
     neuron_ccheck(to_cell, "Broken destination cell");
+    struct neuron_state *from_cell_body = &from_cell->context->body;
+    struct neuron_state *to_cell_body = &to_cell->context->body;
 
     size_t synapse_index = 0;
     
@@ -67,15 +69,15 @@ __router_create_synapse(neural_cell *from_cell, neural_cell *to_cell) {
     } while(to_cell->synapse[synapse_index++]);
     synapse_index--;
     
-    to_cell->impulse = realloc(to_cell->impulse, synapse_index * sizeof(enum bool));
-    check(synapse_index - to_cell->body.signal->rows >= 0, "New size may be only greater or equal");
-    memset(to_cell->impulse + to_cell->body.signal->rows, 0, (synapse_index - to_cell->body.signal->rows) * sizeof(enum bool));
+    to_cell->impulse_ready = realloc(to_cell->impulse_ready, synapse_index * sizeof(enum bool));
+    check(synapse_index - from_cell_body->signal->rows >= 0, "New size may be only greater or equal");
+    memset(to_cell->impulse_ready + to_cell_body->signal->rows, 0, (synapse_index - to_cell_body->signal->rows) * sizeof(enum bool));
     
-    Matrix.reshape(to_cell->body.signal, synapse_index, to_cell->body.signal->columns);
-    Neuron.weight.init(&to_cell->body);
-    matrix_check(to_cell->body.signal);
+    Matrix.reshape(to_cell_body->signal, synapse_index, to_cell_body->signal->columns);
+    Neuron.weight.init(to_cell);
+    matrix_check(to_cell_body->signal);
 
-    check(synapse_index == to_cell->body.signal->rows == to_cell->body.weight->rows, "Signal and weight dimesion not proper");
+    check(synapse_index == to_cell_body->signal->rows == to_cell_body->weight->rows, "Signal and weight dimesion not proper");
     check(to_cell->synapse[synapse_index] == NULL, "Last synapse pointer isn't NULL");
 
     return;

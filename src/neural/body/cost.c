@@ -22,7 +22,7 @@ const struct cost_library Cost = {
     },
     .cross_entropy = {
         .of = cost_loss_cross_entropy_vector,
-//        .derivative = cost_loss_cross_entropy_vector_derivative
+        .derivative = cost_loss_cross_entropy_vector_derivative
     },
 };
 
@@ -60,7 +60,7 @@ cost_loss_mean_squared_derivative(vector *predicted, vector *target) {
 //static
 //float
 //cost_loss_cross_entropy_derivative(float predicted, float target) {
-//    return -1. * target / predicted + (1 - target) / (1 - predicted);
+//    return -1. * (target / predicted + (1 - target) / (1 - predicted));
 //}
 //
 //static
@@ -98,6 +98,7 @@ cost_loss_cross_entropy_vector(vector *predicted, vector *target) {
                                          Vector.mul(oneMinusOriginal, logOneMinusPredicted)),
                               -1.);
 
+    // Garbage Control
     Vector.delete(logPredicted);
     Vector.delete(oneMinusOriginal);
     Vector.delete(logOneMinusPredicted);
@@ -106,3 +107,30 @@ cost_loss_cross_entropy_vector(vector *predicted, vector *target) {
 }
 
 
+
+static
+vector *
+cost_loss_cross_entropy_vector_derivative(vector *predicted, vector *target) {
+    vector *targetOverPredicted = Vector.div(Vector.copy(target),
+                                             predicted);
+    vector *oneMinusOriginal = Vector.num.add(
+                                              Vector.num.mul(Vector.copy(target), -1.),
+                                              1.);
+    vector *oneMinusPredicted = Vector.num.add(
+                                              Vector.num.mul(Vector.copy(predicted), -1.),
+                                              1.);
+
+    vector *oneMinusDivision = Vector.div(Vector.copy(oneMinusOriginal), oneMinusPredicted);
+
+    vector *loss = Vector.num.mul(Vector.add(Vector.copy(targetOverPredicted), 
+                                             oneMinusDivision),
+                                 -1);
+
+    // Garbage Control
+    Vector.delete(targetOverPredicted);
+    Vector.delete(oneMinusOriginal);
+    Vector.delete(oneMinusPredicted);
+    Vector.delete(oneMinusDivision);
+
+    return loss;
+}

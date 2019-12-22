@@ -24,7 +24,7 @@ static float probability_bayes(P_space *space, char *A_field, float A_value, cha
 // Properties
 static float probability_expected_value_conditional(P_space *space, char *expected_field, char *related_field, float value);
 static float probability_expected_value(P_space *space, char *field);
-static float probability_matrix_expected_value_of_function(P_space *space, char *field, float operation(float));
+// static float probability_matrix_expected_value_of_function(P_space *space, char *field, float operation(float));
 static float probability_variance(P_space *space, char *field);
 static float probability_covariance(P_space *space, char *field, char *related_field);
 static float probability_correlation(P_space *space, char *field, char *related_field);
@@ -295,7 +295,7 @@ static
 float
 probability_bayes(P_space *space, char *A_field, float A_value, char *B_field, float B_value) {
     float P_BA = probability_conditional(space, B_field, B_value, A_field, A_value);
-    float P_A = probability_mass_of(space, B_field, B_value);
+    float P_A = probability_mass_of(space, A_field, A_value);
     float P_B = probability_mass_of(space, B_field, B_value);
     
     return P_A * P_BA / P_B;

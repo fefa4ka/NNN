@@ -13,24 +13,24 @@ static vector *sigmoid_context(neuron_context *context);
 static vector *sigmoid_derivative(neuron_context *context);
 static vector *tanh_context(neuron_context *context);
 static vector *tanh_derivative(neuron_context *context);
-static float   soft_sign(neuron_context *context);
-static float   soft_sign_derivative(neuron_context *context);
-static float   heaviside_step(neuron_context *context);
-static float   heaviside_step_derivative(neuron_context *context);
-static float   soft_plus(neuron_context *context);
-static float   soft_plus_derivative(neuron_context *context);
+// static float   soft_sign(neuron_context *context);
+// static float   soft_sign_derivative(neuron_context *context);
+// static float   heaviside_step(neuron_context *context);
+// static float   heaviside_step_derivative(neuron_context *context);
+// static float   soft_plus(neuron_context *context);
+// static float   soft_plus_derivative(neuron_context *context);
 static vector *soft_max(neuron_context *context);
 static vector *soft_max_derivative(neuron_context *context);
 static double relu(double value);
 static double relu_derivative(double value);
 static vector *relu_context(neuron_context *context);
 static vector *relu_derivative_context(neuron_context *context);
-static float   leaky_relu(neuron_context *context);
-static float   leaky_relu_derivative(neuron_context *context);
-static float   elu(neuron_context *context);
-static float   elu_derivative(neuron_context *context);
-static float   transparent(neuron_context *context);
-static float   transparent_derivative(neuron_context *context);
+// static float   leaky_relu(neuron_context *context);
+// static float   leaky_relu_derivative(neuron_context *context);
+// static float   elu(neuron_context *context);
+// static float   elu_derivative(neuron_context *context);
+// static float   transparent(neuron_context *context);
+// static float   transparent_derivative(neuron_context *context);
 
 /* Library structure */
 const struct activation_library Activation = {
@@ -202,7 +202,7 @@ static
 vector *
 soft_max_derivative(neuron_context *context) {
     size_t number_of_samples = context->body.activation->size;
-    size_t layer_dimension = context->layer.dimension;
+    // size_t layer_dimension = context->layer.dimension;
     
     vector *prime = Vector.create(number_of_samples);
     

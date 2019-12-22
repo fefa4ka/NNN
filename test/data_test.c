@@ -22,9 +22,6 @@ char *iris_load() {
     test_assert(iris_test == NULL, "Iris data set corrupted");    
 
     return NULL;
-
-error:
-    return "Data loading failed";
 }
 
 char *vector_to_binary() {
@@ -36,7 +33,7 @@ error:
     return "To binary converting failed";
 }
 
-char *data_from_marix() {
+char *data_from_matrix() {
     data_set iris_binary = Data.matrix(set.features.values, binary_target);
     char *iris_binary_test = data_set_test(iris_binary);
     test_assert(iris_binary_test == NULL, "Binary data set target corrupted");
@@ -61,7 +58,7 @@ char *all_tests() {
 
     test_run(iris_load);
     test_run(vector_to_binary);
-    test_run(data_from_marix);
+    test_run(data_from_matrix);
     test_run(data_delete);
     
     return NULL;

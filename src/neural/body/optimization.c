@@ -15,6 +15,7 @@ const struct optimization_library Optimization = {
     .sgd = optimization_sgd
 };
 
+// https://ml-cheatsheet.readthedocs.io/en/latest/backpropagation.html
 static
 void
 optimization_back_propagation(neural_cell *cell) {
@@ -24,7 +25,7 @@ optimization_back_propagation(neural_cell *cell) {
     // Eo = C'(O-y) * ... if output layer
     vector *base_error = *cell->axon
                             ? Vector.create(body->signal->rows)
-                            : Vector.copy(cell->body.error);
+                            : Vector.copy(cell->context->prime.error);
     vector_check_print(base_error, "Base error (Eo) vector for back propagate is broken");
     vector_values_check(base_error);
 
@@ -32,13 +33,13 @@ optimization_back_propagation(neural_cell *cell) {
     size_t axon_dimension = 0;
     for(neural_cell *axon = cell->axon[0]; cell->axon[axon_dimension]; axon = cell->axon[axon_dimension]) {
         neuron_ccheck(axon, "Broken cell in axon terminal");
-        size_t signal_dimension = axon->body.signal->columns;
+        size_t signal_dimension = axon->context->body.signal->columns;
         
         for(size_t index = 0; index < signal_dimension; index++) {
             if(axon->synapse[index] == cell) {
                 // En = Ei * Wi
                 struct neuron_state front_prime = axon->context->prime;
-                vector *front_error = front_prime.error;
+                vector *front_error = Vector.copy(front_prime.error);
                 vector_values_check(front_error);
                 vector_check_print(front_error, "Error vector of front neuron %zdx%zd", axon->coordinates.layer, axon->coordinates.position);
                 front_error = Vector.num.mul(front_error, MATRIX(front_prime.weight, index, 0));
@@ -47,6 +48,9 @@ optimization_back_propagation(neural_cell *cell) {
                 base_error = Vector.add(base_error, front_error);
                 vector_values_check(base_error);
                 axon_dimension++;
+
+                free(front_error);
+                break;
             }
         }
     }
@@ -61,21 +65,31 @@ optimization_back_propagation(neural_cell *cell) {
     vector_check(base_error);
     
 
-    // Z'(X)
-    matrix *transfer_derivative_over_signal = cell->body.nucleus.transfer.derivative(cell->context, false);
+    // Z'(W)
+    matrix *transfer_derivative_over_signal = cell->nucleus.transfer.derivative(cell->context, true);
     matrix_check(transfer_derivative_over_signal);
+
     
-    // Z'(W)? - if last layer, W is 1
+    // Z'(X)? - if last layer, W is 1
     matrix *transfer_derivative_over_weight = *cell->axon
-        ? Matrix.seed(Matrix.create(body->weight->rows, body->weight->columns), 1)
-        : cell->body.nucleus.transfer.derivative(cell->context, true);
-    matrix_check(transfer_derivative_over_weight);
-    
+        ? cell->nucleus.transfer.derivative(cell->context, false)
+        : Matrix.seed(Matrix.create(body->weight->rows, body->weight->columns), 1);
+
+    // E = Eo * Z'(W) * ...
+    vector_foreach(base_error) {
+        float *sample_error = &VECTOR(base_error, index);
+        vector *sample_error_weight = Vector.num.mul(Vector.copy(transfer_derivative_over_weight->vector), *sample_error);
+
+        VECTOR(base_error, index) = Vector.sum.all(sample_error_weight) / sample_error_weight->size;
+        Vector.delete(sample_error_weight);
+    }
+
     // R'(Z)
-    vector *activation_derivative = cell->body.nucleus.activation.derivative(cell->context);
+    vector *activation_derivative = cell->nucleus.activation.derivative(cell->context);
     vector_check(activation_derivative);
     vector_values_check(activation_derivative);
     vector_values_check(base_error);
+
     // E = Eo * R'(Z) * ... - current layer error
     base_error = Vector.mul(base_error, activation_derivative);
     vector_values_check(base_error);
@@ -84,15 +98,16 @@ optimization_back_propagation(neural_cell *cell) {
     matrix *cost_weight_prime = Matrix.copy(body->weight);
     vector_values_check(transfer_derivative_over_signal->vector);
     matrix_foreach(cost_weight_prime) {
-        float term = MATRIX(transfer_derivative_over_signal, row, column);
-        
-        vector *cw_prime = Vector.num.mul(Vector.copy(base_error),
-                                          term);
+        // float term = MATRIX(transfer_derivative_over_signal, row, column);
+        vector *cw_prime = Matrix.column(transfer_derivative_over_signal, row);
+        cw_prime = Vector.mul(cw_prime, base_error);
+
         MATRIX(cost_weight_prime, row, column) = Vector.sum.all(cw_prime) / cw_prime->size;
         Vector.delete(cw_prime);
     }
     matrix_check(cost_weight_prime);
     vector_values_check(cost_weight_prime->vector);
+
     // Garbage Control
     if(prime->activation) {
         Vector.delete(prime->activation);
@@ -133,21 +148,24 @@ optimization_sgd(void *_cell, float learning_rate, float *params)
     // dW = x * Eo
     vector_values_check(body->weight->vector);
     vector_values_check(prime->weight->vector);
-    matrix *delta_weight = Matrix.mul(Matrix.copy(body->weight),
-                                     prime->weight);
+    // matrix *delta_weight = Matrix.mul(Matrix.copy(body->weight),
+    //                                   prime->weight);
+    matrix *delta_weight = Matrix.copy(prime->weight);
+
     // dW = dW * learnin_rate
     Vector.num.mul(delta_weight->vector, learning_rate);
+    
     matrix_check(delta_weight);
+
+
     // W = W - dW
-    cell->body.weight = Matrix.sub(body->weight,
-                                  delta_weight);
-    body->weight = cell->body.weight;
+    body->weight = Matrix.sub(body->weight,
+                              delta_weight);
     matrix_check(body->weight);
 
     // B = B - Eo / m
-    cell->body.bias -= learning_rate
-                      * Vector.sum.all(body->error) / body->error->size;
-    body->bias = cell->body.bias;
+    body->bias -= learning_rate
+                      * Vector.sum.all(prime->error) / prime->error->size;
 
     // Garbage Conrol
     Matrix.delete(delta_weight);

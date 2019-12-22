@@ -1,2 +1,6 @@
-buid/
+build/
 **/*.o
+.ccls-cache/
+.vscode/
+naive.xcodeproj
+bin/

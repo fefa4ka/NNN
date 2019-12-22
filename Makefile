@@ -1,6 +1,6 @@
 CC=cc
 WFLAGS=-Wall -Wextra
-CFLAGS=-g -O2 -Isrc -rdynamic -DNDEBUG $(WFLAGS) $(OPTFLAGS)
+CFLAGS=-g -Isrc -rdynamic -DNDEBUG $(WFLAGS) $(OPTFLAGS)
 LIBS=-ldl $(OPTLIBS)
 PREFIX?=/usr/local
 

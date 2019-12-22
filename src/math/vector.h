@@ -12,13 +12,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <math.h>
 #include <time.h>
 
-#include "../util/macros.h"
+#include "number.h"
 #include "../util/sort.h"
 
-#define NUMBER_TYPE "t_Num"
 #define VECTOR_TYPE "t_Vec"
 #define VECTOR_HASH_TYPE "t_VectorHash"
 
@@ -30,12 +28,9 @@
 #define vector_foreach(vector) \
     for(size_t index = 0; index < (vector)->size; index++) \
 
-#define PI 3.14159265358979323846
-
 typedef struct
 {
     char   *type;
-
     float value;
 } number;
 
@@ -63,6 +58,7 @@ struct vector_library_operation {
 
 struct vector_library {
     vector *  (*create)(size_t size);
+    // Make new instance of vector in memory
     vector *  (*copy)(vector *original);
     vector *  (*reshape)(vector *v, size_t size);
     vector *  (*seed)(vector *instance, float default_value);

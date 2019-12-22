@@ -435,7 +435,8 @@ matrix_multiplication(matrix *A, matrix *B) {
     matrix_check(A);
     matrix_check(B);
     matrix *multiplicated = matrix_create(A->rows, B->columns);
-    
+    check(A->rows == B->columns, "Matrix sizes doesn't match");
+
     matrix_foreach(multiplicated) {
         size_t index = A->columns > 1
         ? B->rows
@@ -709,7 +710,7 @@ matrix_print(matrix *instance) {
             printf("[\t");
         }
         if(is_head_or_tail) {
-            printf("%.3f\t\t", MATRIX(instance, row, column));
+            printf("%f\t\t", MATRIX(instance, row, column));
         }
         
         if(is_middle) {
@@ -721,7 +722,7 @@ matrix_print(matrix *instance) {
     
     printf("]]");
     
-    printf("\n\t\tFrobenius Norm: %.2f\n", matrix_frobenius_norm(instance));
+    printf("\n\t\tFrobenius Norm: %f\n", matrix_frobenius_norm(instance));
     
 error:
     return;

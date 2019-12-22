@@ -1,5 +1,6 @@
 #include "unit.h"
 #include <math/matrix.h>
+#include <stdio.h>
 
 matrix *M;
 
@@ -44,7 +45,7 @@ char *vector_transpose_test() {
     matrix_check(wT_V);
 
     test_assert(Matrix.rel.is_equal(vT_W, wT_V), "vT * w != wT * v");
-    
+     
     Vector.delete(v);
     Vector.delete(w);
     Matrix.delete(V);

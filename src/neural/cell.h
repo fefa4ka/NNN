@@ -19,24 +19,13 @@
 #include "body/cost.h"
 
 /* Macros */
-#define NEURON_CHECK(neuron, message, ...) { matrix_check_print((neuron).signal, "For neuron signal state." " " message, ##__VA_ARGS__); matrix_check_print((neuron).weight, "Neuron weight state." " " message, ##__VA_ARGS__); vector_check_print((neuron).transfer, "Neuron transfer state." " " message, ##__VA_ARGS__); vector_check_print((neuron).error, "Neuron error state." " " message, ##__VA_ARGS__); }
+#define neuron_state_check(neuron, message, ...) { matrix_check_print((neuron).signal, "For neuron signal state." " " message, ##__VA_ARGS__); matrix_check_print((neuron).weight, "Neuron weight state." " " message, ##__VA_ARGS__); vector_check_print((neuron).transfer, "Neuron transfer state." " " message, ##__VA_ARGS__); vector_check_print((neuron).error, "Neuron error state." " " message, ##__VA_ARGS__); }
 
-#define NEURON_CELL_IS_SYNC(cell) ((cell->context != NULL) && \
-                                   (cell->context->body.weight == cell->body.weight \
-                                    && cell->context->body.bias == cell->body.bias \
-                                    && cell->context->body.signal == cell->body.signal \
-                                    && cell->context->body.transfer == cell->body.transfer \
-                                    && cell->context->body.activation == cell->body.axon \
-                                    && cell->context->body.error == cell->body.error) \
-                                  || cell->context == NULL)
 #define neuron_ccheck(cell, message, ...)                                \
     {                                                                        \
         check((cell), "Out of memory. " message, ##__VA_ARGS__);             \
-        check(NEURON_CELL_IS_SYNC((cell)), "Cell context is't synchronized." \
-                                           " " message,                      \
-              ##__VA_ARGS__);                                                \
-        NEURON_CHECK((cell)->body, message, ##__VA_ARGS__);                  \
     }
+
 #define neurons_check(array, message, ...)        \
     check((array), "Out of memory. " message, ##__VA_ARGS__);                                 \
     for (size_t index = 0; array[index]; index++) \
@@ -46,7 +35,7 @@
 typedef float  (*neuron_summation_function)(matrix *input, matrix *weight, float bias);
 typedef float* (*optimization_function)(void *cell, float learning_rate, float* params);
 
-
+/* Behavior of neuron */
 typedef struct neuron_kernel {
     struct
     transfer_library_function      transfer;
@@ -61,42 +50,42 @@ typedef struct neuron_kernel {
     optimization_function          optimization;
 } neuron_kernel;
 
-typedef struct {
-    matrix *                     signal;
-    matrix *                     weight;
-    float                        bias;
+/* Neuron body */
+// typedef struct {
+//     matrix *                     signal;
+//     matrix *                     weight;
+//     float                        bias;
+// 
+//     neuron_kernel                nucleus;
+// 
+//     vector *                     transfer;
+//     vector *                     activation;
+//     vector *                     error;
+// } neuron;
 
-    neuron_kernel                nucleus;
-
-    vector *                     transfer;
-    vector *                     axon;
-    vector *                     error;
-} neuron;
-
+/* Neuron in network, with relations with another cells */
 typedef struct neural_cell {
     struct {
         size_t          layer;
         size_t          position;
     }                   coordinates;
     
-    neuron              body;
+    neuron_kernel       nucleus;
     neuron_context *    context;
     
     struct neural_cell  **synapse;
     struct neural_cell  **axon;
     
-    enum bool           *impulse;
-    enum bool           *reverse;
+    enum bool           *impulse_ready;
+    enum bool           *feedback_ready;
 } neural_cell;
 
+
+/* Neuron library methods */
 struct neuron_library {
-    neuron               (*create)(neuron_kernel nucleus);
-    void                 (*delete)(neuron *n);
-    
-    struct {
-        neural_cell      (*create)(neuron_kernel kernel, size_t layer, size_t position);
-        void             (*delete)(neural_cell *cell);
-    } cell;
+
+    neural_cell *        (*create)(neuron_kernel kernel, size_t layer, size_t position);
+    void                 (*delete)(neural_cell *cell);
 
     struct
     {
@@ -108,12 +97,12 @@ struct neuron_library {
     neural_cell *        (*fire)(neural_cell *cell, matrix *signal);
     
     struct {
-        neuron *         (*init)(neuron *cell);
-        neuron *         (*set)(neuron *cell, matrix *weight, float bias);
+        neural_cell *    (*init)(neural_cell *cell);
+        neural_cell *    (*set)(neural_cell *cell, matrix *weight, float bias);
     } weight;
     
     struct {
-        neuron *         (*functions)(neuron *cell,
+        neural_cell *     (*functions)(neural_cell *cell,
                              struct transfer_library_function transfer,
                              float (*summation)(vector *transfer),
                              struct activation_library_function activation,

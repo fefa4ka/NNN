@@ -22,7 +22,7 @@
 check((matrix)->type == MATRIX_TYPE, "Wrong matrix type. " message, ##__VA_ARGS__); \
 check((matrix)->columns && (matrix)->rows, "Matrix size not set. " message, ##__VA_ARGS__); \
 check((matrix)->vector->size && (matrix)->columns * (matrix)->rows == (matrix)->vector->size, \
-    "Matrix value broken %zdx%zd = %zd. " message, (matrix)->rows, (matrix)->columns, ((matrix)->vector && (matrix)->vector->size) || 0, ##__VA_ARGS__); \
+    "Matrix value broken %zdx%zd = %d. " message, (matrix)->rows, (matrix)->columns, ((matrix)->vector && (matrix)->vector->size) || 0, ##__VA_ARGS__); \
 vector_check_print((matrix)->vector, "Matrix values vector broken. " message, ##__VA_ARGS__); \
 }
 #define matrix_check(matrix) matrix_check_print(matrix, "")

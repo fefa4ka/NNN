@@ -24,6 +24,7 @@
         neurons_check(cell->axon, "Neuron cell %zdx%zd axon terminal is broken", cell->coordinates.layer, cell->coordinates.position);       \
     }
 
+/* Neural network with defined shape and list of neurons */
 typedef struct {
     struct {
         size_t*   dimensions;
@@ -34,6 +35,7 @@ typedef struct {
     neural_cell   **neurons;
 } neural_network;
 
+/* Definition of layer */
 typedef struct {
     neuron_kernel       kernel;
     
@@ -42,7 +44,7 @@ typedef struct {
     size_t              dimension;
 } neural_layer;
 
-
+/* Library methods */
 struct network_library {
     neural_network       (*create)(neural_layer layers[]);
     void                 (*delete)(neural_network *network);

@@ -9,33 +9,33 @@
 #include "network.h"
 #define NETWORK(network, layer, position) (network)->state[(int)Network.neuron(network, layer, position)]
 
-static neural_network       network_create(neural_layer layers[]);
-static void                 network_delete(neural_network *network);
+static neural_network       create(neural_layer layers[]);
+static void                 delete(neural_network *network);
 
-static matrix *             network_fire(neural_network *network, matrix *signal);
-static matrix *             network_axon(neural_network *network);
-static size_t               network_get_neuron_position(neural_network *network, size_t layer, size_t position);
-static neural_cell **       network_get_layer_cells(neural_network *network, size_t layer);
-static matrix *             network_error(neural_network *network, matrix *signal, matrix *target, enum bool derivative);
-static void                 network_cell_back_propagation(neural_cell *cell, float learning_rate);
+static matrix *             fire(neural_network *network, matrix *signal);
+static matrix *             axon(neural_network *network);
+static size_t               get_neuron_position(neural_network *network, size_t layer, size_t position);
+static neural_cell **       get_layer_cells(neural_network *network, size_t layer);
+static matrix *             compute_error(neural_network *network, matrix *signal, matrix *target, enum bool derivative);
+static void                 cell_back_propagation(neural_cell *cell, float learning_rate);
 static enum bool            neuron_error_impulse(neural_cell *source, neural_cell *destination);
-static void                 network_train(neural_network *network, data_batch *training_data, float learning_rate, int epoch);
-static void                 network_back_propagation(neural_network *network, matrix *signal, matrix *target, float learning_rate);
-static neural_network *     __network_seed_layer(neural_network *network, neural_layer *layer);
-static neural_network *     __network_route(neural_network *network, neural_layer layers[]);
-static void                 __network_build_cell_context(neural_network *network);
+static void                 train(neural_network *network, data_batch *training_data, float learning_rate, int epoch);
+static void                 back_propagation(neural_network *network, matrix *signal, matrix *target, float learning_rate);
+static neural_network *     seed_next_layer(neural_network *network, neural_layer *layer);
+static neural_network *     route(neural_network *network, neural_layer layers[]);
+static void                 __build_cell_context(neural_network *network);
 
 /* Library Structure */
 const struct network_library Network = {
-    .create = network_create,
-    .delete = network_delete,
-    .fire = network_fire,
-    .train = network_train,
+    .create = create,
+    .delete = delete,
+    .fire = fire,
+    .train = train,
     .get = {
-        .neuron = network_get_neuron_position,
-        .layer = network_get_layer_cells
+        .neuron = get_neuron_position,
+        .layer = get_layer_cells
     },
-    .error = network_error
+    .error = compute_error
 };
 
 #define NETWORK_LAST_LAYER(network) \
@@ -46,7 +46,7 @@ const struct network_library Network = {
 
 static
 neural_network
-network_create(neural_layer layers[]) {
+create(neural_layer layers[]) {
     neural_network network = {
         .resolution = {
             .layers = 0,
@@ -59,30 +59,30 @@ network_create(neural_layer layers[]) {
     size_t layer_index = 0;
     
     while(layers[layer_index].dimension != 0) {
-        __network_seed_layer(&network, &layers[layer_index++]);
+        seed_next_layer(&network, &layers[layer_index++]);
     }
         
-    __network_route(&network, layers);
-        
-   __network_build_cell_context(&network);
+    route(&network, layers);   
+    __build_cell_context(&network);
+    
     
     return network;
 }
 
 static 
 void
-network_delete(neural_network *network) {
+delete(neural_network *network) {
     free(network->resolution.dimensions);
     for (size_t index = 0; index < network->resolution.size; index++) {
-        Neuron.cell.delete(network->neurons[index]);
+        Neuron.delete(network->neurons[index]);
     }
     free(network->neurons);
 }
 
-/* Network Seeding */
+/* Init layer neural cell instances */
 static
 neural_network *
-__network_seed_layer(neural_network *network, neural_layer *layer) {
+seed_next_layer(neural_network *network, neural_layer *layer) {
     network->neurons = realloc(network->neurons,
                                (network->resolution.size + layer->dimension) * sizeof(neural_cell*));
     check_memory(network->neurons);
@@ -93,8 +93,7 @@ __network_seed_layer(neural_network *network, neural_layer *layer) {
     network->resolution.dimensions[network->resolution.layers] = layer->dimension;
     
     for(size_t position = 0; position < layer->dimension; position++) {
-        neural_cell *cell_ptr = malloc(sizeof(neural_cell));
-        *cell_ptr = Neuron.cell.create(layer->kernel, network->resolution.layers, position);
+        neural_cell *cell_ptr = Neuron.create(layer->kernel, network->resolution.layers, position);
         network->neurons[network->resolution.size++] = cell_ptr;
 
         neuron_ccheck(network->neurons[network->resolution.size - 1], "Created broken cell %zdx%zd", network->resolution.layers, position);
@@ -108,14 +107,13 @@ error:
     return NULL;
 }
 
+/* Connect each layer cells using defined layer router */
 static
 neural_network *
-__network_route(neural_network *network, neural_layer layers[]) {
-    size_t layer = 0;
-    while(network->resolution.layers > layer) {
+route(neural_network *network, neural_layer layers[]) {
+    size_t layer = network->resolution.layers;
+    while(layer--) {
         layers[layer].router(network, layer);
-        
-        layer++;
     }
     
     return network;
@@ -125,13 +123,13 @@ __network_route(neural_network *network, neural_layer layers[]) {
 /* Context */
 static
 void
-__network_build_cell_context(neural_network *network) {
+__build_cell_context(neural_network *network) {
     for(size_t index = 0; index < network->resolution.size; index++) {
         neural_cell *cell = network->neurons[index];
         neuron_ccheck(cell, "Neuron %zd", index);
-        neural_cell **layer_cells = network_get_layer_cells(network, cell->coordinates.layer);
+        neural_cell **layer_cells = get_layer_cells(network, cell->coordinates.layer);
 
-        cell->context = Neuron.context.create(cell, layer_cells);
+        Neuron.context.create(cell, layer_cells);
 
         free(layer_cells);
     }
@@ -142,7 +140,7 @@ error:
 
 static
 neural_cell **
-network_get_layer_cells(neural_network *network, size_t layer) {
+get_layer_cells(neural_network *network, size_t layer) {
     size_t layer_dimension = network->resolution.dimensions[layer];
     neural_cell **terminals = malloc((layer_dimension + 1) * sizeof(neural_cell*));
     check_memory(terminals);
@@ -163,7 +161,7 @@ error:
 /* Network Fire */
 static
 matrix *
-network_fire(neural_network *network, matrix *signal) {
+fire(neural_network *network, matrix *signal) {
     network_check(network);
     
     size_t index = 0;
@@ -174,11 +172,11 @@ network_fire(neural_network *network, matrix *signal) {
         neural_cell *cell = network->neurons[index];
         
         Neuron.fire(cell, signal);
-        
+
         index++;
     }
     
-    return network_axon(network);
+    return axon(network);
 
 error:
     return NULL;
@@ -187,7 +185,7 @@ error:
 /* Error */
 static
 matrix *
-network_error(neural_network *network, matrix *signal, matrix *target, enum bool derivative) {
+compute_error(neural_network *network, matrix *signal, matrix *target, enum bool derivative) {
     network_check(network);
     matrix_check_print(signal, "Broken signal for network error");
     matrix_check_print(target, "Broken target for network error");
@@ -197,25 +195,36 @@ network_error(neural_network *network, matrix *signal, matrix *target, enum bool
     size_t position = 0;
     size_t error_dimension = 0;
     
-    matrix *axon = network_fire(network, signal);
+    matrix *axon = fire(network, signal);
     vector **error = malloc(layer_size * sizeof(vector*));
     check_memory(error);
     while (layer_size > position)
     {
         neural_cell *cell = &NEURON(network, layer_index, position);
+        struct neuron_state *body = &cell->context->body;
         vector *neuron_target = Matrix.column(target, position);
-        
-        if(derivative) {
-            error[position] = cell->body.nucleus.error.derivative(cell->body.axon,
-                                                                  neuron_target);
-        } else {
-            error[position] = cell->body.nucleus.error.of(cell->body.axon,
-                                                          neuron_target);
+
+        if (derivative)
+        {
+            error[position] = cell->nucleus.error.derivative(body->activation,
+                                                             neuron_target);
+            if(cell->context->prime.error) {    
+                Vector.delete(cell->context->prime.error);
+            }
+            cell->context->prime.error = error[position];
         }
+        else
+        {
+            error[position] = cell->nucleus.error.of(body->activation,
+                                                     neuron_target);
+            Vector.delete(body->error);
+            body->error = cell->context->body.error = error[position];
+        }
+
         vector_check(error[position]);
-        
-        if(cell->body.axon->size > error_dimension) {
-            error_dimension = cell->body.axon->size;
+
+        if(body->activation->size > error_dimension) {
+            error_dimension = body->activation->size;
         }
         
         Vector.delete(neuron_target);
@@ -227,10 +236,6 @@ network_error(neural_network *network, matrix *signal, matrix *target, enum bool
     matrix_check(error_matrix);
     
     // Garbage control
-    position = 0;
-    while(layer_size > position) {
-        Vector.delete(error[position++]);
-    }
     Matrix.delete(axon);
     free(error);
     
@@ -243,7 +248,7 @@ error:
 /* Train */
 static
 void
-network_train(neural_network *network, data_batch *training_data, float learning_rate, int epoch) {
+train(neural_network *network, data_batch *training_data, float learning_rate, int epoch) {
     network_check(network);
 
     for (int epoch_index = 0; epoch_index < epoch; epoch_index++)
@@ -255,7 +260,7 @@ network_train(neural_network *network, data_batch *training_data, float learning
             matrix_check(signal);
             matrix_check(target);
             
-            network_back_propagation(network, signal, target, learning_rate);
+            back_propagation(network, signal, target, learning_rate);
         }
 
         matrix *test_signal = training_data->test
@@ -264,12 +269,17 @@ network_train(neural_network *network, data_batch *training_data, float learning
         matrix *test_target = training_data->test
             ? training_data->test->target.values
             : training_data->train->target.values;
-        matrix *error = network_error(network, test_signal, test_target, false);
-        log_info("[Error: %.10f]", Vector.sum.all(error->vector) / error->rows);
+        matrix *error = compute_error(network, test_signal, test_target, false);
+        float error_value = Vector.sum.all(error->vector) / error->rows;
+        log_info("[Error: %.10f]", error_value);
         
         Matrix.delete(error);
 
         network_check(network);
+
+        if(error_value < 0.0001) {
+            break;
+        }
     }
 
 error:
@@ -278,20 +288,19 @@ error:
 
 static
 void
-network_back_propagation(neural_network *network, matrix *signal, matrix *target, float learning_rate) {
+back_propagation(neural_network *network, matrix *signal, matrix *target, float learning_rate) {
     matrix_check_print(signal, "Back propagate broken signal");
     matrix_check_print(target, "Back propagate broken target");
 
-    matrix *error = network_error(network, signal, target, true);
+    matrix *error = compute_error(network, signal, target, true);
+    
 
     NETWORK_LAST_LAYER(network) {
         neural_cell *cell = &NEURON(network, layer, position);
         neuron_ccheck(cell, "Last layer neuron %zdx%zd is broken", layer, position);
-        Vector.delete(cell->body.error);
-        cell->body.error = Matrix.column(error, position);
-        cell->context->body.error = cell->body.error;
-
-        network_cell_back_propagation(cell, learning_rate);
+        
+        
+        cell_back_propagation(cell, learning_rate);
     }
     Matrix.delete(error);
 
@@ -302,7 +311,7 @@ error:
 /* Network Result Signal */
 static
 matrix *
-network_axon(neural_network *network) {
+axon(neural_network *network) {
     size_t layer_index = network->resolution.layers - 1;
     size_t layer_size = network->resolution.dimensions[layer_index];
     size_t position = 0;
@@ -311,7 +320,7 @@ network_axon(neural_network *network) {
     while(layer_size > position) {
         neural_cell *cell = &NEURON(network, layer_index, position);
         neuron_ccheck(cell, "Last layer broken cell");
-        axon[position] = cell->body.axon;
+        axon[position] = cell->context->body.activation;
         vector_check_print(axon[position], "Broken axon signal from last layer cell");
         position++;
     }
@@ -329,14 +338,13 @@ error:
 // Back Propagation
 static
 void
-network_cell_back_propagation(neural_cell *cell, float learning_rate) {
+cell_back_propagation(neural_cell *cell, float learning_rate) {
     neuron_ccheck(cell, "Broken cell from argument");
     check(learning_rate, "Learning rate doesn't set");
 
     static float *params = NULL;
     // TODO: Params for Adam
-    params = cell->body.nucleus.optimization((void*)cell, learning_rate, params);
-
+    params = cell->nucleus.optimization((void*)cell, learning_rate, params);
     // Synapse reverse fire
     size_t synapse_index = 0;
     while(cell->synapse[synapse_index]) {
@@ -344,7 +352,7 @@ network_cell_back_propagation(neural_cell *cell, float learning_rate) {
         neuron_ccheck(synapse_cell, "Broken cell in synapse terminal");
         
         if(neuron_error_impulse(cell, synapse_cell)) {
-            network_cell_back_propagation(synapse_cell, learning_rate);
+            cell_back_propagation(synapse_cell, learning_rate);
         }
         synapse_index++;
     }
@@ -355,7 +363,7 @@ error:
 
 //static
 //void
-//network_cell_back_propagation(neural_cell *cell, float learning_rate) {
+//cell_back_propagation(neural_cell *cell, float learning_rate) {
 //    size_t axon_dimension = 0;
 //    vector **errors = malloc(sizeof(vector*));
 //    vector *cell_activation_prime = Vector.map(Vector.copy(cell->body.transfer),
@@ -431,7 +439,7 @@ error:
 //    while(cell->synapse[synapse_index]) {
 //        neural_cell *synapse_cell = cell->synapse[synapse_index];
 //        if(neuron_error_impulse(cell, synapse_cell)) {
-//            network_cell_back_propagation(synapse_cell, learning_rate);
+//            cell_back_propagation(synapse_cell, learning_rate);
 //        }
 //        synapse_index++;
 //    }
@@ -450,11 +458,11 @@ neuron_error_impulse(neural_cell *source, neural_cell *destination) {
     
     while(destination->axon[index]) {
         if(destination->axon[index] == source) {
-            destination->reverse[index] = true;
+            destination->feedback_ready[index] = true;
             impulse = true;
         }
         
-        if(destination->reverse[index] == false) {
+        if(destination->feedback_ready[index] == false) {
             fire = false;
         }
         
@@ -466,8 +474,8 @@ neuron_error_impulse(neural_cell *source, neural_cell *destination) {
     }
     
     if(fire) {
-        free(destination->reverse);
-        destination->reverse = calloc(index, sizeof(enum bool));
+        free(destination->feedback_ready);
+        destination->feedback_ready = calloc(index, sizeof(enum bool));
         //        destination->error = memset(destination->error, 0, index * sizeof(int));
         return true;
     }
@@ -482,7 +490,7 @@ error:
 /* Position */
 static
 size_t
-network_get_neuron_position(neural_network *network, size_t layer, size_t position) {
+get_neuron_position(neural_network *network, size_t layer, size_t position) {
     size_t absolute_position = 0;
     
     while(layer--) {
