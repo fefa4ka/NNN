@@ -13,5 +13,7 @@ float random_range(float min, float max)
 {
     float range = (max - min);
     float div = RAND_MAX / range;
-    return min + (rand() / div);
+    float random = min + (rand() / div);
+
+    return random > 1e-5 ? random : 1e-5;
 }

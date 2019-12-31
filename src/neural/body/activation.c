@@ -15,8 +15,9 @@ static vector *tanh_context(neuron_context *context);
 static vector *tanh_derivative(neuron_context *context);
 // static float   soft_sign(neuron_context *context);
 // static float   soft_sign_derivative(neuron_context *context);
-// static float   heaviside_step(neuron_context *context);
-// static float   heaviside_step_derivative(neuron_context *context);
+static double   heaviside_step(double value);
+static vector  *heaviside_step_context(neuron_context *context);
+static vector  *heaviside_step_derivative(neuron_context *context);
 // static float   soft_plus(neuron_context *context);
 // static float   soft_plus_derivative(neuron_context *context);
 static vector *soft_max(neuron_context *context);
@@ -46,10 +47,10 @@ const struct activation_library Activation = {
 //        .of = soft_sign,
 //        .derivative = soft_sign_derivative
 //    },
-//    .heaviside_step = {
-//        .of = heaviside_step,
-//        .derivative = heaviside_step_derivative
-//    },
+    .heaviside_step = {
+        .of = heaviside_step_context,
+        .derivative = heaviside_step_derivative
+    },
 //    .soft_plus = {
 //        .of = soft_plus,
 //        .derivative = soft_plus_derivative
@@ -126,7 +127,7 @@ relu_context(neuron_context *context) {
 static
 double
 relu_derivative(double value) {
-    return value >= 0
+    return value > 0
     ? 1
     : 0;
 }
@@ -134,7 +135,7 @@ relu_derivative(double value) {
 static
 vector *
 relu_derivative_context(neuron_context *context) {
-    return Vector.map(Vector.copy(context->body.activation),
+    return Vector.map(Vector.copy(context->body.transfer),
                       relu_derivative);
 }
 
@@ -155,8 +156,8 @@ error:
 static
 vector *
 tanh_derivative(neuron_context *context) {
-    vector_check(context->body.activation);
-    vector *prime = Vector.map(Vector.copy(context->body.activation),
+    vector_check(context->body.transfer);
+    vector *prime = Vector.map(Vector.copy(context->body.transfer),
                                tanh);
     prime = Vector.mul(prime, prime);
     
@@ -183,13 +184,13 @@ soft_max(neuron_context *context) {
     
     for(size_t sample = 0; sample < number_of_samples; sample++) {
         float layer_exp_sum = 0;
-        for (vector ***axon = context->layer.axon; *axon; axon++ ){
+        for (vector ***axon = context->layer.transfer; *axon; axon++ ){
             vector_check_print(**axon, "Axon vector in layer is broken");
             float layer_axon_value_of_sample = VECTOR(**axon, sample);
             layer_exp_sum += exp(layer_axon_value_of_sample);
         }
-        vector_check_print(context->body.activation, "Activation of context is broken");
-        float axon_value_of_sample = VECTOR(context->body.activation, sample);
+        vector_check_print(context->body.transfer, "Activation of context is broken");
+        float axon_value_of_sample = VECTOR(context->body.transfer, sample);
         VECTOR(activation, sample) = exp(axon_value_of_sample) / layer_exp_sum;
     }
     
@@ -201,45 +202,68 @@ error:
 static
 vector *
 soft_max_derivative(neuron_context *context) {
-    size_t number_of_samples = context->body.activation->size;
-    // size_t layer_dimension = context->layer.dimension;
-    
-    vector *prime = Vector.create(number_of_samples);
-    
-    for(size_t sample = 0; sample < number_of_samples; sample++) {
-        float layer_exp_sum = 0;
-        for (vector ***axon = context->layer.axon; *axon; axon++ ){
-            vector_check_print(**axon, "Axon vector in layer is broken");
-            float layer_axon_value_of_sample = VECTOR(**axon, sample);
-            layer_exp_sum += exp(layer_axon_value_of_sample);
-        }
-        vector_check_print(context->body.activation, "Activation of context is broken");
+    vector *smax = soft_max(context);
+    vector *oneMinusSmax = Vector.num.add(
+                                          Vector.num.mul(Vector.copy(smax), -1.),
+                                          1);
+    vector *prime = Vector.mul(smax, oneMinusSmax);
 
-        float axon_value_of_sample = VECTOR(context->body.activation, sample);
-        float exp_axon_value = exp(axon_value_of_sample);
-        VECTOR(prime, sample) = exp_axon_value * (layer_exp_sum - exp_axon_value)
-                                / layer_exp_sum;
-    }
-    
+    Vector.delete(oneMinusSmax);
+
+    return prime;
+
+    // size_t number_of_samples = context->body.activation->size;
+    // // size_t layer_dimension = context->layer.dimension;
+    // 
+    // vector *prime = Vector.create(number_of_samples);
+    // 
+    // for(size_t sample = 0; sample < number_of_samples; sample++) {
+    //     float layer_exp_sum = 0;
+    //     for (vector ***axon = context->layer.transfer; *axon; axon++ ){
+    //         vector_check_print(**axon, "Axon vector in layer is broken");
+    //         float layer_axon_value_of_sample = VECTOR(**axon, sample);
+    //         layer_exp_sum += exp(layer_axon_value_of_sample);
+    //     }
+    //     vector_check_print(context->body.transfer, "Transfer of context is broken");
+
+    //     float axon_value_of_sample = VECTOR(context->body.transfer, sample);
+    //     float exp_axon_value = exp(axon_value_of_sample);
+    //     VECTOR(prime, sample) = (exp_axon_value * (layer_exp_sum - exp_axon_value))
+    //                             / pow(layer_exp_sum, 2);
+    //     
+    //     if(isnan(VECTOR(prime, sample)) != false || isinf(VECTOR(prime, sample)) != false) {
+    //             printf("bad");
+    //     }
+    //     
+    // }
+
+
     return prime;
 error:
     return NULL;
 }
 
 /* Heaviside Step */
-//static
-//float
-//heaviside_step(neuron_context *context) {
-//    return value > 0
-//    ? 1
-//    : 0;
-//}
-//
-//static
-//float
-//heaviside_step_derivative(neuron_context *context) {
-//    return 0;
-//}
+static
+double
+heaviside_step(double value) {
+    return value > 0
+    ? 1
+    : 0;
+}
+
+static
+vector *
+heaviside_step_context(neuron_context *context) {
+    return Vector.map(Vector.copy(context->body.transfer),
+                      heaviside_step);
+}
+
+static
+vector *
+heaviside_step_derivative(neuron_context *context) {
+    return Vector.seed(Vector.create(context->body.transfer->size), 0);
+}
 
 /* SoftSign */
 //static

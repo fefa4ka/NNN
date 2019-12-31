@@ -20,8 +20,8 @@
     {                                                                                                                                        \
         neural_cell *cell = network->neurons[index];                                                                                        \
         neuron_ccheck(cell, "Neuron cell %zd is broken", index);                                                                         \
-        neurons_check(cell->synapse, "Neuron cell %zdx%zd synapse terminal is broken", cell->coordinates.layer, cell->coordinates.position); \
-        neurons_check(cell->axon, "Neuron cell %zdx%zd axon terminal is broken", cell->coordinates.layer, cell->coordinates.position);       \
+        neurons_check(cell->synapse, "Neuron cell %zdx%zd synapse terminal is broken", cell->context->layer_index, cell->context->position); \
+        neurons_check(cell->axon, "Neuron cell %zdx%zd axon terminal is broken", cell->context->layer_index, cell->context->position);       \
     }
 
 /* Neural network with defined shape and list of neurons */
@@ -42,6 +42,7 @@ typedef struct {
     void                (*router)(neural_network *network, size_t layer);
     
     size_t              dimension;
+    float               dropout;
 } neural_layer;
 
 /* Library methods */
@@ -51,7 +52,7 @@ struct network_library {
     
     matrix *             (*fire)(neural_network *network, matrix *signal);
     void                 (*train)(neural_network *network, data_batch *training_data, float learning_rate, int epoch);
-    matrix *             (*error)(neural_network *network, matrix *signal, matrix *target, enum bool derivative);
+    float                (*error)(neural_network *network, matrix *signal, matrix *target);
     
     struct {
         size_t           (*neuron)(neural_network *network, size_t layer, size_t position);

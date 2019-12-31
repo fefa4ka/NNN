@@ -47,9 +47,11 @@ static vector *      vector_map_param(vector *v, float operation(float, float*),
 static int           vector_index_of(vector *v, float needle);
 static float         vector_length(vector *v);
 static float         vector_l_norm(vector *v, int p);
+static size_t        vector_max_index(vector *v);
 static float         vector_max_norm(vector *v);
 static vector *      vector_unit(vector *v);
 static vector *      vector_uniq(vector *instance);
+
 // Sums
 static float        vector_sum(vector *v);
 static float        vector_sum_to(vector *v, size_t to_index);
@@ -59,6 +61,7 @@ static float        vector_sum_between(vector *v, size_t from_index, size_t to_i
 static float         vector_angle(vector *v, vector *w);
 static enum bool     vector_is_perpendicular(vector *v, vector *w);
 static enum bool     vector_is_equal(vector *v, vector *w);
+static vector *      vector_shuffle(vector *v);
 
 // UI
 static void          vector_print(vector *instance);
@@ -86,7 +89,10 @@ const struct vector_library Vector = {
         .length = vector_length,
         .unit = vector_unit,
         .l_norm = vector_l_norm,
-        .max_norm = vector_max_norm,
+        .max = {
+            .index = vector_max_index,
+            .norm = vector_max_norm
+        },
         .uniq = vector_uniq
     },
     
@@ -117,7 +123,8 @@ const struct vector_library Vector = {
     
     .dot = vector_dot_product,
     .map = vector_map,
-    .map_of = vector_map_param
+    .map_of = vector_map_param,
+    .shuffle = vector_shuffle
 };
 
 
@@ -694,6 +701,29 @@ error:
     return 0;
 }
 
+static
+size_t
+vector_max_index(vector *v) {
+    vector_check(v);
+
+    float max = 0;
+    size_t max_index = 0;
+
+    size_t index = v->size;
+    while(index--) {
+        float value = fabs(VECTOR(v, index));
+        if (value > max) {
+            max = value;
+            max_index = index;
+        }
+    }
+    
+    return max_index;
+    
+error:
+    return 0;
+}
+
 /* Relations */
 static
 float
@@ -742,6 +772,31 @@ error:
     return false;
 }
 
+static
+vector *
+vector_shuffle(vector *v) {
+    // Shuffle
+    size_t size = v->size;
+    for(size_t index = 0; index < size; index++) {
+        size_t shuffled = (size_t)random_range(0, size);
+        
+        if(shuffled == index) {
+            if(index == size - 1) {
+                if(index != 0) {
+                    shuffled = index - 1;
+                }
+            } else {
+                shuffled = index + 1;
+            }
+        }
+        
+        float shuffled_value = VECTOR(v, index);
+        VECTOR(v, index) = VECTOR(v, shuffled);
+        VECTOR(v, shuffled) = shuffled_value;
+    }
+    
+    return v;
+}
 
 /* UI */
 static

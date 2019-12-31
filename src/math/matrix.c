@@ -542,7 +542,7 @@ static
 matrix *
 matrix_scalar_addition(matrix *A, float scalar) {
     matrix_check(A);
-    Vector.add(A->vector, &scalar);
+    Vector.num.add(A->vector, scalar);
     
     return A;
     

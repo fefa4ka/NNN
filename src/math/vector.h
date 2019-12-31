@@ -80,7 +80,10 @@ struct vector_library {
         vector *   (*uniq)(vector *v);
         float      (*length)(vector *v);
         float      (*l_norm)(vector *v, int p);
-        float      (*max_norm)(vector *v);
+        struct {
+            size_t     (*index)(vector *v);
+            float      (*norm)(vector *v);
+        } max;
     } prop;
     
     struct {
@@ -111,6 +114,7 @@ struct vector_library {
     float       (*dot)(vector *v, vector *w);
     vector *    (*map)(vector *v, double operation(double));
     vector *    (*map_of)(vector *v, float operation(float, float*), float *operation_params);
+    vector *    (*shuffle)(vector *v);
 };
 
 extern const struct vector_library Vector;

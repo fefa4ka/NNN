@@ -17,6 +17,7 @@ static data_set *   data_part(data_set *set, size_t pool_offset, size_t pool_siz
 static data_set **  data_mini_batch(data_set *set, size_t batch_size);
 static data_batch   data_split(data_set *set, size_t batch_size, size_t train, size_t validation, size_t test);
 static matrix *     data_vector_to_binary_columns(vector *column);
+static vector *     data_binary_to_vector(matrix *binary);
 
 const struct data_library Data = {
     .matrix = data_from_matrix,
@@ -25,6 +26,7 @@ const struct data_library Data = {
     .print = data_print,
     .convert = {
         .vector_to_binary = data_vector_to_binary_columns,
+        .binary_to_vector = data_binary_to_vector
     },
     .delete = data_delete
 };
@@ -202,6 +204,25 @@ data_vector_to_binary_columns(vector *column) {
     Vector.delete(uniq);
     
     return columns;
+}
+
+static
+vector *
+data_binary_to_vector(matrix *binary) {
+    vector *index = Vector.create(binary->rows); 
+    
+    for(size_t row = 0; row < binary->rows; row++) {
+        float *row_data = &MATRIX(binary, row, 0);
+        vector *row_vector = Vector.from.floats(3, row_data);
+        
+        size_t category_index = Vector.prop.max.index(row_vector);
+        
+        VECTOR(index, row) = category_index;
+
+        Vector.delete(row_vector);
+    }
+    
+    return index;
 }
 
 static

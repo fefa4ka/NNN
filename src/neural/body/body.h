@@ -25,8 +25,10 @@ struct neuron_state {
 };
 
 struct layer_state {
-    vector ***                    axon;
+    vector ***                    transfer;
+    vector ***                    activation;
     vector ***                    error;
+
     size_t                        dimension;
 };
 
@@ -34,7 +36,11 @@ typedef struct {
     struct neuron_state          body;
     struct neuron_state          prime;
     struct layer_state           layer;
+
     float *                      variables;
+
+    size_t                       layer_index;
+    size_t                       position; 
 } neuron_context;
 
 #endif /* body_h */

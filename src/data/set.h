@@ -53,6 +53,7 @@ struct data_library {
     void          (*print)(data_set *data);
     struct {
         matrix *  (*vector_to_binary)(vector *column);
+        vector *  (*binary_to_vector)(matrix *binary);
     } convert;
 };
 

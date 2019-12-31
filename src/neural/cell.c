@@ -8,13 +8,11 @@
 
 #include "cell.h"
 
-// static neuron               body_create(neuron_kernel nucleus);
-// static void                 body_delete(neuron *body);
-
 static neural_cell *        cell_create(neuron_kernel neuron_kernel, size_t layer, size_t position);
 static void                 cell_delete(neural_cell *cell);
 
 static neural_cell *        fire(neural_cell *cell, matrix *signal);
+static neural_cell *        transfer(neural_cell *cell);
 static neural_cell *        activation(neural_cell *cell);
 static void                 fire_forward(neural_cell *cell);
 static void                 impulse(neural_cell *source, neural_cell *destination);
@@ -33,7 +31,7 @@ static neural_cell *        init_weight(neural_cell *cell);
 //                                                  float (*summation)(vector *transfer),
 //                                                  struct activation_library_function activation,
 //                                                  struct cost_library_function error);
-// static neural_cell *        set_weight(neural_cell *cell, matrix *weight, float bias);
+static neural_cell *        set_weight(neural_cell *cell, matrix *weight, float bias);
 static neural_cell *        set_signal(neural_cell *cell, matrix *data);
 
 
@@ -50,14 +48,16 @@ const struct neuron_library Neuron = {
     
     .weight = {
         .init = init_weight,
-        // .set = set_weight
+        .set = set_weight
     },
     
-    // .set = {
+    .set = {
+    //     .signal = set_signal
     //     .functions = set_functions
-    // },
+    },
     
     .fire = fire,
+    .activation = activation,
     
     .synapse = {
         .read = collect_synapse_signal,
@@ -65,33 +65,6 @@ const struct neuron_library Neuron = {
     }
 };
 
-/* Neuron Body */
-// static
-// neuron
-// body_create(neuron_kernel nucleus) {
-//     float bias = random_range(-1, 1);
-//     
-//     return (neuron) {
-//         .signal = Matrix.create(1, 1),
-//         .weight = Matrix.seed(Matrix.create(1, nucleus.transfer.dimension), 0),
-//         .bias = bias,
-//         .nucleus = nucleus,
-//         .transfer = Vector.create(1),
-//         .activation = Vector.create(1),
-//         .error = Vector.create(1)
-//     };
-// }
-// 
-// static
-// void
-// body_delete(neuron *body) {
-//     Matrix.delete(body->signal);
-//     Matrix.delete(body->weight);
-//     
-//     Vector.delete(body->transfer);
-//     Vector.delete(body->activation);
-//     Vector.delete(body->error);
-// }
 
 /* Neural Cell in network */
 static
@@ -99,6 +72,10 @@ neural_cell *
 cell_create(neuron_kernel nucleus, size_t layer, size_t position) {
     neural_cell *cell = malloc(sizeof(neural_cell));
     neuron_context *context = malloc(sizeof(neuron_context));
+    
+    context->layer_index = layer;
+    context->position = position;
+    
     context->prime = (struct neuron_state) {0};
     context->body = (struct neuron_state) {
         .weight     = Matrix.seed(Matrix.create(1, nucleus.transfer.dimension), 0),
@@ -111,10 +88,6 @@ cell_create(neuron_kernel nucleus, size_t layer, size_t position) {
 
     *cell = (neural_cell) {
             .nucleus = nucleus, 
-            .coordinates = {
-                .layer = layer,
-                .position = position
-            },
             .context = context,
             .axon = calloc(1, sizeof(neural_cell *)),
             .synapse = calloc(1, sizeof(neural_cell *)),
@@ -143,11 +116,12 @@ static
 neuron_context *
 context_create(neural_cell *cell, neural_cell **layer_cells) {
     size_t layer_index = 0;
-    vector ***layer_axon = malloc(sizeof(vector**));
+    vector ***layer_transfer = malloc(sizeof(vector**));
+    vector ***layer_activation = malloc(sizeof(vector**));
     vector ***layer_error = malloc(sizeof(vector**));
 
     check_memory(layer_cells);
-    neurons_check(layer_cells, "Layer for %zdx%zd cell building failed.", cell->coordinates.layer, cell->coordinates.position);
+    neurons_check(layer_cells, "Layer for %zdx%zd cell building failed.", cell->context->layer_index, cell->context->position);
 
     while(layer_cells[layer_index]) {
         neural_cell *layer_cell = layer_cells[layer_index];
@@ -155,62 +129,51 @@ context_create(neural_cell *cell, neural_cell **layer_cells) {
 
         neuron_ccheck(layer_cell, "Cell %zd from layer is broken", layer_index);
         size_t layer_size = (layer_index + 2) * sizeof(vector**);
+
         
-        layer_axon = realloc(layer_axon, layer_size);
-        check_memory(layer_axon);
-        layer_axon[layer_index] = &(body->activation);
-        check_memory(layer_axon[layer_index]);
-        vector_check_print(*layer_axon[layer_index],
-                           "[%zd] Axon vector is broken", layer_index);
+        layer_transfer = realloc(layer_transfer, layer_size);
+        check_memory(layer_transfer);
+        layer_transfer[layer_index] = &(body->transfer);
+        check_memory(layer_transfer[layer_index]);
+        vector_check_print(*layer_transfer[layer_index],
+                           "[%zd] Transfer vector is broken", layer_index);
+        
+        layer_activation = realloc(layer_activation, layer_size);
+        check_memory(layer_activation);
+        layer_activation[layer_index] = &(body->activation);
+        check_memory(layer_activation[layer_index]);
+        vector_check_print(*layer_activation[layer_index],
+                           "[%zd] Activation vector is broken", layer_index);
         
         layer_error = realloc(layer_error, layer_size);
         check_memory(layer_error);
         layer_error[layer_index] = &(body->error);
+        check_memory(layer_error);
         vector_check_print(*layer_error[layer_index],
                            "[%zd] Error vector is broken", layer_index);
         
         layer_index++;
-        layer_axon[layer_index] = NULL;
+        layer_transfer[layer_index] = NULL;
+        layer_activation[layer_index] = NULL;
         layer_error[layer_index] = NULL;
     }
     
     cell->context->layer = (struct layer_state) {
         .dimension = layer_index,
-        .axon = layer_axon,
+        .transfer = layer_transfer,
+        .activation = layer_activation,
         .error = layer_error
+
     };
 
     return cell->context;
 
 error:
-    free(layer_axon);
+    free(layer_activation);
     free(layer_error);
 
     return cell->context; 
 }
-
-// static
-// neuron_context *
-// context_create(neural_cell *cell, neural_cell **layer_cells) {
-//     neuron_ccheck(cell, "On get context")
-// 
-//     neuron_context *context = malloc(sizeof(neuron_context));
-//     context->prime = (struct neuron_state) {0};
-//     context->body = (struct neuron_state) {
-//         .weight     = Matrix.seed(Matrix.create(1, cell->nucleus.transfer.dimension), 0),
-//         .bias       = random_range(-1, 1),
-//         .signal     = Matrix.create(1, 1), 
-//         .transfer   = Vector.create(1), 
-//         .activation = Vector.create(1),
-//         .error      = Vector.create(1)
-//     };
-//     context->layer = context_layer(cell, layer_cells);
-// 
-//     return context;
-//     
-// error:
-//     return NULL;
-// }
 
 static
 void
@@ -224,7 +187,8 @@ context_delete(neuron_context *context) {
     Vector.delete(body->activation);
     Vector.delete(body->error);   
 
-    free(context->layer.axon);
+    free(context->layer.transfer);
+    free(context->layer.activation);
     free(context->layer.error);
     free(context);
 }
@@ -236,14 +200,16 @@ neural_cell *
 fire(neural_cell *cell, matrix *data) {
     neuron_ccheck(cell, "Argument Cell");
     matrix_check_print(data, "For neuron fire");
-    memset(cell->impulse_ready, 0, cell->context->body.signal->columns * sizeof(enum bool));
 
     set_signal(cell, data);
     init_weight(cell);
     
-    activation(cell);
+    transfer(cell);
     fire_forward(cell);
+    
+    cell->activated = false;
 
+    memset(cell->impulse_ready, 0, cell->context->body.signal->columns * sizeof(enum bool));
     return cell;
 
 error:
@@ -327,6 +293,10 @@ collect_synapse_signal(neural_cell *cell) {
             check_memory(impulse);
         }
         
+        if(cell->synapse[dimension]->activated == false) {
+            activation(cell->synapse[dimension]);
+        }
+
         impulse[dimension] = cell->synapse[dimension]->context->body.activation;
         vector_check(impulse[dimension]);
         
@@ -395,19 +365,22 @@ error:
     return NULL;
 }
 
-// static
-// neural_cell *
-// set_weight(neural_cell *cell, matrix *weight, float bias) {
-//     struct neuron_state *body = &(cell->context->body);
-// 
-//     body->weight = weight;
-//     body->bias = bias;
-//     
-//     return cell;
-// 
-// error:
-//     return NULL;
-// }
+static
+neural_cell *
+set_weight(neural_cell *cell, matrix *weight, float bias) {
+    struct neuron_state *body = &cell->context->body;
+    check_memory(body);
+    matrix_check(weight);
+    Matrix.delete(body->weight);
+
+    body->weight = weight;
+    body->bias = bias;
+    
+    return cell;
+
+error:
+    return NULL;
+}
 
 static
 neural_cell *
@@ -427,7 +400,7 @@ error:
 
 static
 neural_cell *
-activation(neural_cell *cell) {
+transfer(neural_cell *cell) {
     struct neuron_state *body = &cell->context->body;
     neuron_kernel *kernel = &cell->nucleus;
  
@@ -438,11 +411,25 @@ activation(neural_cell *cell) {
     vector_values_check(body->transfer);
     vector_check_print(cell->context->body.transfer, "Transfer is broken");
     
+    return cell;
+    
+error:
+    return NULL;
+}
+
+static
+neural_cell *
+activation(neural_cell *cell) {
+    struct neuron_state *body = &cell->context->body;
+    neuron_kernel *kernel = &cell->nucleus;
+ 
     vector *activation = kernel->activation.of(cell->context);
     Vector.delete(body->activation);
     body->activation = activation;
     vector_check_print(cell->context->body.activation, "Activation is broken");
     vector_values_check(body->activation);
+    
+    cell->activated = true;
     
     return cell;
     
@@ -467,26 +454,26 @@ get_cell_layer(neural_cell *cell) {
         terminal = cell->axon;
         is_forward = true;
     }
-    neurons_check(terminal, "Terminal array of cell %zdx%zd is broken", cell->coordinates.layer, cell->coordinates.position);
+    neurons_check(terminal, "Terminal array of cell %zdx%zd is broken", cell->context->layer_index, cell->context->position);
     for(size_t terminal_index = 0; terminal[terminal_index]; terminal_index++) {
         neural_cell *input_cell = terminal[terminal_index];
-        neuron_ccheck(input_cell, "(%zdx%zd) Input cell TI = %zd", cell->coordinates.layer, cell->coordinates.position, terminal_index);
+        neuron_ccheck(input_cell, "(%zdx%zd) Input cell TI = %zd", cell->context->layer_index, cell->context->position, terminal_index);
 
         neural_cell **input_cell_terminal = is_forward
             ? input_cell->synapse 
             : input_cell->axon;
 
-        neurons_check(input_cell_terminal, "Terminal array of input cell %zdx%zd is broken", input_cell->coordinates.layer, input_cell->coordinates.position);
+        neurons_check(input_cell_terminal, "Terminal array of input cell %zdx%zd is broken", input_cell->context->layer_index, input_cell->context->position);
         for (size_t input_terminal_index = 0; input_cell_terminal[input_terminal_index]; input_terminal_index++)
         {
             neural_cell *axon_cell = input_cell_terminal[input_terminal_index];
-            neuron_ccheck(axon_cell, "(%zdx%zd) Terminal cell TI = %zd, ITI = %zd", input_cell->coordinates.layer, input_cell->coordinates.position, terminal_index, input_terminal_index);
+            neuron_ccheck(axon_cell, "(%zdx%zd) Terminal cell TI = %zd, ITI = %zd", input_cell->context->layer_index, input_cell->context->position, terminal_index, input_terminal_index);
             
             size_t layer_cell_index = 0;
             neurons_check(layer_cells, "Uniq array of cells is broken");
             while(layer_cells[layer_cell_index]) {
                 neural_cell *layer_cell = layer_cells[layer_cell_index];
-                neuron_ccheck(layer_cell, "(%zdx%zd) Layer cell. TI = %zd, ITI = %zd, LCI = %zd", axon_cell->coordinates.layer, axon_cell->coordinates.position, terminal_index, input_terminal_index, layer_cell_index);
+                neuron_ccheck(layer_cell, "(%zdx%zd) Layer cell. TI = %zd, ITI = %zd, LCI = %zd", axon_cell->context->layer_index, axon_cell->context->position, terminal_index, input_terminal_index, layer_cell_index);
                 
                 if(layer_cell == axon_cell) {
                     break;

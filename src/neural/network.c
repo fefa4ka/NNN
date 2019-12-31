@@ -16,7 +16,8 @@ static matrix *             fire(neural_network *network, matrix *signal);
 static matrix *             axon(neural_network *network);
 static size_t               get_neuron_position(neural_network *network, size_t layer, size_t position);
 static neural_cell **       get_layer_cells(neural_network *network, size_t layer);
-static matrix *             compute_error(neural_network *network, matrix *signal, matrix *target, enum bool derivative);
+static float                compute_error(neural_network *network, matrix *signal, matrix *target);
+static float                accuracy(neural_network *network, matrix *signal, matrix *target);
 static void                 cell_back_propagation(neural_cell *cell, float learning_rate);
 static enum bool            neuron_error_impulse(neural_cell *source, neural_cell *destination);
 static void                 train(neural_network *network, data_batch *training_data, float learning_rate, int epoch);
@@ -127,7 +128,7 @@ __build_cell_context(neural_network *network) {
     for(size_t index = 0; index < network->resolution.size; index++) {
         neural_cell *cell = network->neurons[index];
         neuron_ccheck(cell, "Neuron %zd", index);
-        neural_cell **layer_cells = get_layer_cells(network, cell->coordinates.layer);
+        neural_cell **layer_cells = get_layer_cells(network, cell->context->layer_index);
 
         Neuron.context.create(cell, layer_cells);
 
@@ -168,7 +169,7 @@ fire(neural_network *network, matrix *signal) {
     
     matrix_check_print(signal, "For network fire");
 
-    while(network->resolution.size > index && network->neurons[index]->coordinates.layer == 0) {
+    while(network->resolution.size > index && network->neurons[index]->context->layer_index == 0) {
         neural_cell *cell = network->neurons[index];
         
         Neuron.fire(cell, signal);
@@ -184,8 +185,8 @@ error:
 
 /* Error */
 static
-matrix *
-compute_error(neural_network *network, matrix *signal, matrix *target, enum bool derivative) {
+float
+compute_error(neural_network *network, matrix *signal, matrix *target) {
     network_check(network);
     matrix_check_print(signal, "Broken signal for network error");
     matrix_check_print(target, "Broken target for network error");
@@ -193,93 +194,113 @@ compute_error(neural_network *network, matrix *signal, matrix *target, enum bool
     size_t layer_index = network->resolution.layers - 1;
     size_t layer_size = network->resolution.dimensions[layer_index];
     size_t position = 0;
-    size_t error_dimension = 0;
+    size_t samples_count = 0;
     
-    matrix *axon = fire(network, signal);
-    vector **error = malloc(layer_size * sizeof(vector*));
-    check_memory(error);
+    matrix *predicted = Network.fire(network, signal);
+    float *error_body = malloc(layer_size * sizeof(float));
+    vector **error_prime = malloc(layer_size * sizeof(vector*));
+    check_memory(error_body);
+    check_memory(error_prime);
+
     while (layer_size > position)
     {
         neural_cell *cell = &NEURON(network, layer_index, position);
         struct neuron_state *body = &cell->context->body;
-        vector *neuron_target = Matrix.column(target, position);
 
-        if (derivative)
-        {
-            error[position] = cell->nucleus.error.derivative(body->activation,
-                                                             neuron_target);
-            if(cell->context->prime.error) {    
-                Vector.delete(cell->context->prime.error);
-            }
-            cell->context->prime.error = error[position];
+        // Let's begin backpropagating the error derivatives. 
+        // Since we have the predicted output of this particular input example, 
+        // we can compute how the error changes with that output.
+        error_prime[position] = cell->nucleus.error.derivative(cell->context,
+                                                               target);
+        if(cell->context->prime.error) {    
+            Vector.delete(cell->context->prime.error);
         }
-        else
-        {
-            error[position] = cell->nucleus.error.of(body->activation,
-                                                     neuron_target);
-            Vector.delete(body->error);
-            body->error = cell->context->body.error = error[position];
-        }
+        cell->context->prime.error = error_prime[position];
+ 
+        error_body[position] = cell->nucleus.error.of(cell->context,
+                                                      target);
+        VECTOR(body->error, 0) = error_body[position];
 
-        vector_check(error[position]);
+        vector_check(error_prime[position]);
 
-        if(body->activation->size > error_dimension) {
-            error_dimension = body->activation->size;
+        if(body->activation->size > samples_count) {
+            samples_count = body->activation->size;
         }
-        
-        Vector.delete(neuron_target);
         
         position++;
     }
     
-    matrix *error_matrix = Matrix.transpose(Matrix.from(error, layer_size, error_dimension));
-    matrix_check(error_matrix);
-    
+    vector *error_vector = Vector.from.floats(layer_size, error_body);
+    float error = Vector.sum.all(error_vector) / error_vector->size;
+
     // Garbage control
-    Matrix.delete(axon);
-    free(error);
+    Vector.delete(error_vector);
+    Matrix.delete(predicted);
+    free(error_prime);
+    free(error_body);
     
-    return error_matrix;
+    return error;
 
 error:
-    return NULL;
+    return 0;
 }
 
 /* Train */
 static
 void
 train(neural_network *network, data_batch *training_data, float learning_rate, int epoch) {
+    int log_interval = 50;
+
     network_check(network);
 
     for (int epoch_index = 0; epoch_index < epoch; epoch_index++)
     {
-        log_info("Epoch %d", epoch_index);
+        
         for(size_t batch = 0; batch < training_data->count; batch++) {
             matrix *signal = training_data->mini[batch]->features.values;
             matrix *target = training_data->mini[batch]->target.values;
+
             matrix_check(signal);
             matrix_check(target);
             
+            for(size_t layer = 0; layer < network->resolution.layers; layer++) {
+                if(network)
+            }
+
             back_propagation(network, signal, target, learning_rate);
         }
 
+        matrix *train_signal = training_data->train->features.values;
+        matrix *train_target = training_data->train->target.values;
+
         matrix *test_signal = training_data->test
             ? training_data->test->features.values
-            : training_data->train->features.values;
+            : train_signal; 
         matrix *test_target = training_data->test
             ? training_data->test->target.values
-            : training_data->train->target.values;
-        matrix *error = compute_error(network, test_signal, test_target, false);
-        float error_value = Vector.sum.all(error->vector) / error->rows;
-        log_info("[Error: %.10f]", error_value);
+            : train_target; 
         
-        Matrix.delete(error);
+        if(epoch_index % log_interval == 0) {
+            log_info("Epoch %d", epoch_index);
+            float test_error = compute_error(network, test_signal, test_target);
+            float test_accuracy = accuracy(network, test_signal, test_target);
+            
+            float train_error = compute_error(network, training_data->train->features.values, training_data->train->target.values);
+            float train_accuracy = accuracy(network, train_signal, train_target);
+
+            log_info("[Validation Loss: %.10f | Accuracy: %.10f] [Training Loss: %.10f | Accuracy: %.10f]", test_error, test_accuracy, train_error, train_accuracy);
+
+            
+            log_info("---");
+
+            if(test_error < 0.001) {
+                break;
+            }
+        }
 
         network_check(network);
 
-        if(error_value < 0.0001) {
-            break;
-        }
+
     }
 
 error:
@@ -287,14 +308,36 @@ error:
 }
 
 static
+float
+accuracy(neural_network *network, matrix *signal, matrix *target) {
+    matrix *predicted = fire(network, signal);
+    vector *target_vector = Data.convert.binary_to_vector(target);
+    vector *predicted_vector = Data.convert.binary_to_vector(predicted);
+
+    size_t predicted_count = 0;
+    
+    for(size_t index = 0; index < target_vector->size; index++) {
+        if((int)VECTOR(target_vector, index) == (int)VECTOR(predicted_vector, index)) {
+            predicted_count += 1;
+        }
+    }
+
+    float accuracy = predicted_count / (target_vector->size * 2. - predicted_count);
+
+    return accuracy;
+}
+
+// The backpropagation algorithm decides how much to update each weight of the network 
+// after comparing the predicted output with the desired output for a particular example.
+static
 void
 back_propagation(neural_network *network, matrix *signal, matrix *target, float learning_rate) {
     matrix_check_print(signal, "Back propagate broken signal");
     matrix_check_print(target, "Back propagate broken target");
 
-    matrix *error = compute_error(network, signal, target, true);
+    // For this, we need to compute how the error changes with respect to each weigh.
+    compute_error(network, signal, target);
     
-
     NETWORK_LAST_LAYER(network) {
         neural_cell *cell = &NEURON(network, layer, position);
         neuron_ccheck(cell, "Last layer neuron %zdx%zd is broken", layer, position);
@@ -302,7 +345,6 @@ back_propagation(neural_network *network, matrix *signal, matrix *target, float 
         
         cell_back_propagation(cell, learning_rate);
     }
-    Matrix.delete(error);
 
 error:
     return;
@@ -319,7 +361,9 @@ axon(neural_network *network) {
     vector **axon = malloc(layer_size * sizeof(vector*));
     while(layer_size > position) {
         neural_cell *cell = &NEURON(network, layer_index, position);
+        
         neuron_ccheck(cell, "Last layer broken cell");
+        Neuron.activation(cell);
         axon[position] = cell->context->body.activation;
         vector_check_print(axon[position], "Broken axon signal from last layer cell");
         position++;
@@ -360,90 +404,6 @@ cell_back_propagation(neural_cell *cell, float learning_rate) {
 error:
     return;
 }
-
-//static
-//void
-//cell_back_propagation(neural_cell *cell, float learning_rate) {
-//    size_t axon_dimension = 0;
-//    vector **errors = malloc(sizeof(vector*));
-//    vector *cell_activation_prime = Vector.map(Vector.copy(cell->body.transfer),
-//                                               cell->body.nucleus.activation.derivative);
-//
-//    while(cell->axon[axon_dimension]) {
-//        neural_cell *axon_cell = cell->axon[axon_dimension];
-//        matrix *axon_weight = Matrix.seed(Matrix.create(1, cell->body.nucleus.transfer.dimension),
-//                                          1);
-//        size_t weight_index = 0;
-//        while(axon_cell->synapse[weight_index]) {
-//            if(axon_cell->synapse[weight_index] == cell) {
-//                for(size_t weight_dimension = 0; weight_dimension < axon_weight->columns; weight_dimension++) {
-//                    MATRIX(axon_weight, 0, weight_dimension) = MATRIX(axon_cell->body.weight, weight_index, weight_dimension);
-//                }
-//                break;
-//            }
-//            weight_index++;
-//        }
-//
-//        vector* transfer_prime = axon_cell->body.nucleus.transfer.prime(axon_weight);
-//        errors = realloc(errors, (axon_dimension + 1) * sizeof(vector*));
-//        errors[axon_dimension] = Vector.mul(Vector.copy(cell_activation_prime),
-//                                            axon_cell->body.error);
-//        Vector.num.mul(errors[axon_dimension],VECTOR(transfer_prime, 0));
-//
-//        axon_dimension++;
-//
-//        // Garbage Conrol
-//        Matrix.delete(axon_weight);
-//        Vector.delete(transfer_prime);
-//    }
-//
-//    if(axon_dimension == 0) {
-//        *errors = Vector.copy(cell->body.error);
-//        axon_dimension = 1;
-//    }
-//
-//    // Mean error from all axons
-//    matrix *errors_matrix = Matrix.from(errors, axon_dimension, cell->body.signal->rows);
-//    vector *error = Vector.create(cell->body.signal->rows);
-//    for(size_t signal = 0; signal < cell->body.signal->rows; signal++) {
-//        vector *dimension_signals = Matrix.column(errors_matrix, signal);
-//       VECTOR(error, signal) = Vector.sum.all(dimension_signals) / dimension_signals->size;
-//
-//        Vector.delete(dimension_signals);
-//    }
-//    Vector.delete(cell->body.error);
-//    cell->body.error = error;
-//
-//    // Update weights
-////    float rate = learning_rate / error->size;
-//    matrix *updated_weight = Matrix.mul(Matrix.transpose(Matrix.copy(cell->body.signal)),
-//                                        error);
-//    Vector.num.mul(updated_weight->vector, learning_rate);
-//    Vector.num.div(updated_weight->vector, error->size);
-//
-//    cell->body.weight = Matrix.sub(cell->body.weight,
-//                                   updated_weight);
-//    cell->body.bias -= learning_rate * Vector.sum.all(error) / error->size;
-//
-//    // Garbage Conrol
-//    for(size_t dimension = 0; dimension < axon_dimension; dimension++) {
-//        Vector.delete(errors[dimension]);
-//    }
-//    Matrix.delete(errors_matrix);
-//    Matrix.delete(updated_weight);
-//    Vector.delete(cell_activation_prime);
-//    free(errors);
-//
-//    // Synapse reverse fire
-//    size_t synapse_index = 0;
-//    while(cell->synapse[synapse_index]) {
-//        neural_cell *synapse_cell = cell->synapse[synapse_index];
-//        if(neuron_error_impulse(cell, synapse_cell)) {
-//            cell_back_propagation(synapse_cell, learning_rate);
-//        }
-//        synapse_index++;
-//    }
-//}
 
 
 static

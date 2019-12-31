@@ -10,11 +10,12 @@
 #define cost_h
 
 #include <stdio.h>
+#include "body.h"
 #include "../../math/matrix.h"
 
 struct cost_library_function {
-    vector *      (*of)(vector *predicted, vector *target);
-    vector *      (*derivative)(vector *predicted, vector *target);
+    float         (*of)(neuron_context *context, matrix *target);
+    vector *      (*derivative)(neuron_context *context, matrix *target);
 };
 
 

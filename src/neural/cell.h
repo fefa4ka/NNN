@@ -50,32 +50,17 @@ typedef struct neuron_kernel {
     optimization_function          optimization;
 } neuron_kernel;
 
-/* Neuron body */
-// typedef struct {
-//     matrix *                     signal;
-//     matrix *                     weight;
-//     float                        bias;
-// 
-//     neuron_kernel                nucleus;
-// 
-//     vector *                     transfer;
-//     vector *                     activation;
-//     vector *                     error;
-// } neuron;
 
 /* Neuron in network, with relations with another cells */
 typedef struct neural_cell {
-    struct {
-        size_t          layer;
-        size_t          position;
-    }                   coordinates;
-    
     neuron_kernel       nucleus;
     neuron_context *    context;
     
     struct neural_cell  **synapse;
     struct neural_cell  **axon;
-    
+
+    enum bool           activated;
+    enum bool           dropout;
     enum bool           *impulse_ready;
     enum bool           *feedback_ready;
 } neural_cell;
@@ -95,6 +80,7 @@ struct neuron_library {
     } context;
     
     neural_cell *        (*fire)(neural_cell *cell, matrix *signal);
+    neural_cell *    (*activation)(neural_cell *cell);
     
     struct {
         neural_cell *    (*init)(neural_cell *cell);
@@ -108,8 +94,8 @@ struct neuron_library {
                              struct activation_library_function activation,
                              struct cost_library_function error);
         neural_cell *    (*weight)(neural_cell *cell, matrix *weight, float bias);
+        neural_cell *    (*signal)(neural_cell *cell, matrix *data);
     } set;
-    
     
     struct {
         void             (*impulse)(neural_cell *source, neural_cell *destination);
