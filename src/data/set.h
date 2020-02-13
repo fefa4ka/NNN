@@ -33,7 +33,6 @@ typedef struct {
         float      std;
     } normalization;
     
-    P_space         probability;
 } data_set;
 
 typedef struct {

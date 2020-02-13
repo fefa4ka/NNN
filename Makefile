@@ -1,6 +1,7 @@
-CC=cc
+CC=gcc-9
 WFLAGS=-Wall -Wextra
 CFLAGS=-g -Isrc -rdynamic -DNDEBUG $(WFLAGS) $(OPTFLAGS)
+LDFLAGS=#-fopenmp
 LIBS=-ldl $(OPTLIBS)
 PREFIX?=/usr/local
 
@@ -16,7 +17,7 @@ SO_TARGET=$(patsubst %.a, %.so, $(TARGET))
 # The Target Build
 all: $(TARGET) $(SO_TARGET) test
 
-dev: CFLAGS=-g -Wall -Isrc -Wextra $(OPTFLAGS)
+dev: CFLAGS=-fopenmp -mavx -g -Wall -Isrc -Wextra $(OPTFLAGS)
 dev: all
 
 $(TARGET): CFLAGS += -fPIC
@@ -24,7 +25,7 @@ $(TARGET): build $(OBJECTS)
 	ar rcs $@ $(OBJECTS)
 	ranlib $@
 $(SO_TARGET): $(TARGET) $(OBJECTS)
-	$(CC) -shared -o $@ $(OBJECTS)
+	$(CC) -shared -o $@ $(OBJECTS) $(LDFLAGS)
 
 build:
 	@mkdir -p build

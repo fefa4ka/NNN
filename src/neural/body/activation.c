@@ -184,6 +184,7 @@ soft_max(neuron_context *context) {
     
     for(size_t sample = 0; sample < number_of_samples; sample++) {
         float layer_exp_sum = 0;
+        //#pragma omp parallel for reduction (+:layer_exp_sum)
         for (vector ***axon = context->layer.transfer; *axon; axon++ ){
             vector_check_print(**axon, "Axon vector in layer is broken");
             float layer_axon_value_of_sample = VECTOR(**axon, sample);
@@ -239,8 +240,6 @@ soft_max_derivative(neuron_context *context) {
 
 
     return prime;
-error:
-    return NULL;
 }
 
 /* Heaviside Step */

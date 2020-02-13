@@ -50,7 +50,7 @@ data_from_matrix(matrix *features, matrix *target) {
     Matrix.delete(target_T);
 
     for(size_t index = 0; index < number_of_fields; index++) {
-        fields[index] = (char*)malloc(3 * sizeof(char));
+        fields[index] = (char*)malloc(5 * sizeof(char));
         sprintf(fields[index], "c%d", (int)index);
 
         if(index >= features->columns) {
@@ -59,6 +59,7 @@ data_from_matrix(matrix *features, matrix *target) {
             feature_labels[index] = fields[index];
         }
     }
+
 
     return (data_set){
         .data = {
@@ -73,9 +74,7 @@ data_from_matrix(matrix *features, matrix *target) {
         .target = {
             .labels = target_labels,
             .values = Matrix.copy(target)
-        },
-        .probability = Probability.from.matrix(all_data,
-                                               fields)
+        }
     };
 }
 
@@ -122,7 +121,8 @@ data_from_csv(char *filename, char** feature_labels, char **target_labels) {
     
     data_set dataset = {
         .data = {
-            .fields = _fields
+            .fields = _fields,
+            .values = all_data
         },
         .features = {
             .labels = feature_labels,
@@ -131,14 +131,9 @@ data_from_csv(char *filename, char** feature_labels, char **target_labels) {
         .target = {
             .labels = _target_labels,
             .values = target
-        },
-        .probability = Probability.from.matrix(all_data,
-                                               _fields)
+        }
     };
     
-    dataset.data.values = dataset.probability.samples;
-
-    Matrix.delete(all_data);
     return dataset;
 }
 
@@ -148,13 +143,15 @@ data_delete(data_set *data) {
     for(size_t index = 0; index < data->data.values->columns; index++) {
         free(data->data.fields[index++]);
     }
-    Matrix.delete(data->data.values);
-    Matrix.delete(data->target.values);
-    Matrix.delete(data->features.values);
-    free(data->features.labels);
-    free(data->target.labels);
+
     free(data->data.fields);
-    Probability.delete(&data->probability);
+    Matrix.delete(data->data.values);
+    
+    free(data->target.labels);
+    Matrix.delete(data->target.values);
+
+    free(data->features.labels);
+    Matrix.delete(data->features.values);
 }
 
 
@@ -171,17 +168,18 @@ data_part(data_set *set, size_t pool_offset, size_t pool_size) {
     size_t number_of_fields = number_of_features + number_of_targets;
     
     matrix *pool_data = Matrix.create(pool_size, number_of_fields);
-    pool_data->vector->values = &set->data.values->vector->values[pool_offset];
-    pool->probability = Probability.from.matrix(pool_data,
-                                                set->data.fields);
+    free(pool_data->vector->values);
+    pool_data->vector->values = &set->data.values->vector->values[pool_offset * set->data.values->columns];
     
     matrix *pool_features = Matrix.create(pool_size, number_of_features);
-    pool_features->vector->values = set->features.values->vector->values;
+    free(pool_features->vector->values);
+    pool_features->vector->values = &set->features.values->vector->values[pool_offset * set->features.values->columns];
     pool->features.labels = set->features.labels;
     pool->features.values = pool_features;
     
     matrix *pool_target = Matrix.create(pool_size, number_of_targets);
-    pool_target->vector->values = &set->target.values->vector->values[pool_offset];
+    free(pool_target->vector->values);
+    pool_target->vector->values = &set->target.values->vector->values[pool_offset * set->target.values->columns];
     pool->target.labels = set->target.labels;
     pool->target.values = pool_target;
     
@@ -196,6 +194,7 @@ data_vector_to_binary_columns(vector *column) {
     vector *uniq = Vector.prop.uniq(column);
     matrix *columns = Matrix.create(column->size, uniq->size);
     
+    //#pragma omp parallel for
     vector_foreach(column) {
         float value = VECTOR(column, index);
         MATRIX(columns, index, Vector.prop.index_of(uniq, value)) = 1.;
@@ -265,7 +264,7 @@ data_split(data_set *set, size_t batch_size, size_t train, size_t validation, si
     }
     
     return (data_batch) {
-        .size = batch_size || set_size,
+        .size = set_size,
         .count = number_of_batches,
         .train = train_set,
         .mini = data_mini_batch(train_set, batch_size),

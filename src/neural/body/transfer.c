@@ -26,16 +26,13 @@ const struct transfer_library Transfer = {
 static
 vector *
 transfer_linear_function(matrix *input, matrix *weight, float bias) {
-    vector *linear_weight = Matrix.column(weight, 0);
-    matrix *signal = Matrix.mul(Matrix.copy(input), linear_weight);
-    vector *prediction = Vector.num.add(Vector.copy(signal->vector),
-                                        bias);
-//    matrix *result = Math.do("%v * %v + %s", input, linear_weight, bias);
+    matrix *transfer_matrix = Matrix.mul(Matrix.copy(input), weight->vector);
+    Vector.num.add(transfer_matrix->vector, bias);
     
-    Matrix.delete(signal);
-    Vector.delete(linear_weight);
+    vector *transfer = Vector.copy(transfer_matrix->vector);
+    Matrix.delete(transfer_matrix);
     
-    return prediction;
+    return transfer;
 }
 
 static

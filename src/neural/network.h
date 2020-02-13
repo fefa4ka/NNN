@@ -10,6 +10,7 @@
 #define network_h
 
 #include <stdio.h>
+//#include <omp.h>
 #include "cell.h"
 #include "body/optimization.h"
 #include "../data/set.h"
@@ -24,6 +25,19 @@
         neurons_check(cell->axon, "Neuron cell %zdx%zd axon terminal is broken", cell->context->layer_index, cell->context->position);       \
     }
 
+/* Training history */
+typedef struct {
+    float               error;
+    float               accuracy; 
+} network_metrics;
+
+typedef struct {
+   network_metrics      train;
+   network_metrics      validation;
+   network_metrics      test;
+} network_loss;
+
+
 /* Neural network with defined shape and list of neurons */
 typedef struct {
     struct {
@@ -33,6 +47,8 @@ typedef struct {
     }             resolution;
     
     neural_cell   **neurons;
+    
+    network_loss  *history;
 } neural_network;
 
 /* Definition of layer */
@@ -44,6 +60,7 @@ typedef struct {
     size_t              dimension;
     float               dropout;
 } neural_layer;
+
 
 /* Library methods */
 struct network_library {

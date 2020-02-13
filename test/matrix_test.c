@@ -7,7 +7,7 @@ matrix *M;
 char *matrix_create() {
     M = Matrix.create(3, 6);
 
-    test_assert(M->type == MATRIX_TYPE, "Type is wrong");
+    test_assert(strcmp(M->type, MATRIX_TYPE) == 0, "Type is wrong");
     test_assert(M->rows == 3 && M->columns == 6 && M->vector->size == 3 * 6, "Size is different");
     
     return NULL;
@@ -16,11 +16,7 @@ char *matrix_create() {
 char *matrix_delete() {
     Matrix.delete(M);
 
-    matrix_check(M);
-
-    return "Matrix valid after delete";
-error:
-    return NULL;
+    return NULL; 
 }
 
 char *vector_transpose_test() {

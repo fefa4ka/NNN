@@ -56,7 +56,8 @@ struct probability_library {
     float    (*expected)(P_space *space, char *field);
     float    (*variance)(P_space *space, char *field);
     float    (*covariance)(P_space *space, char *field, char *related_field);
-    
+    float    (*correlation)(P_space *space, char *field, char *related_field);
+   
 };
 
 extern const struct probability_library Probability;

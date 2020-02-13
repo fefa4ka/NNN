@@ -55,8 +55,8 @@
 #define RUN_TESTS(name)                                                                        \
     int main(int argc, char *argv[])                                                           \
     {                                                                                          \
+        if(argc == 0) exit(0);                                                                 \
         srand((unsigned int)time(NULL));                                                       \
-        argc = 1;                                                                              \
         printf("\033[1m[PENDING]\033[0m %s\n", argv[0]);                                       \
         char *result = name();                                                                 \
         if (result != 0)                                                                       \

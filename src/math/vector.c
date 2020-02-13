@@ -133,16 +133,13 @@ const struct vector_library Vector = {
     vector_foreach(result)                                                            \
     {                                                                                 \
         VECTOR(result, index) = VECTOR(v, index) expression VECTOR(w, index);         \
-        check(VECTOR(result, index) == VECTOR(result, index),                         \
-              "Operation %f " #expression " %f is %f", VECTOR(v, index), VECTOR(w, index), VECTOR(result, index)); \
     }
 
+// PRAGMA(omp parallel for) 
 #define VECTOR_SCALAR_OPERATION(result, v, scalar, expression)                                           \
     vector_foreach(result)                                                                               \
     {                                                                                                    \
         VECTOR(result, index) = VECTOR(v, index) expression scalar;                                      \
-        check(VECTOR(result, index) == VECTOR(result, index),                                            \
-              "Operation %f " #expression " %f is %f", VECTOR(v, index), scalar, VECTOR(result, index)); \
     }
 
 /* Life Cycle */
@@ -285,6 +282,8 @@ vector_delete(void *instance) {
         vector *vec = (vector*)instance;
         free(vec->values);
         free(vec);
+
+        return;
     }
     
     if(IS(instance, VECTOR_HASH_TYPE)) {
@@ -292,6 +291,8 @@ vector_delete(void *instance) {
         Vector.delete(hash->index);
         free(hash->keys);
         free(hash);
+
+        return;
     }
 
 error:
@@ -304,6 +305,7 @@ vector *
 vector_seed(vector *instance, float default_value) {
     vector_check(instance);
     
+    //#pragma omp parallel for
     vector_foreach(instance) {
         if(default_value) {
             VECTOR(instance, index) = default_value;
@@ -326,6 +328,7 @@ vector_hash_list(size_t size, char **list) {
     hash->keys = uniq_strings(list, size, &hash->size);
     hash->index = vector_create(size);
     
+    //#pragma omp parallel for
     vector_foreach(hash->index) {
         size_t key_index = 0;
         while(hash->keys[key_index]) {
@@ -365,6 +368,7 @@ vector_addition(vector *v, vector *w) {
     vector_check(v);
     vector_check(w);
     check(v->size == w->size, "Vector size doesn't match");
+
     VECTOR_OPERATION(v, v, w, +);
 
     return v;
@@ -515,8 +519,9 @@ vector_dot_product(vector *v, vector *w) {
     vector_check(v);
     vector_check(w);
     
-    float product = 0;
+    float product = 0.0f;
     
+    //#pragma omp parallel for simd reduction (+:product)
     vector_foreach(v) {
         product += VECTOR(v, index) * VECTOR(w, index);
     }
@@ -533,6 +538,7 @@ vector *
 vector_map(vector *v, double operation(double)) {
     vector_check(v);
 
+    //#pragma omp parallel for simd 
     vector_foreach(v) {
         VECTOR(v, index) = (float)operation((double)VECTOR(v, index));
     }
@@ -548,6 +554,7 @@ vector *
 vector_map_param(vector *v, float operation(float, float*), float *operation_params) {
     vector_check(v);
 
+    //#pragma omp parallel for
     vector_foreach(v) {
         VECTOR(v, index) = operation(VECTOR(v, index), operation_params);
     }
@@ -588,6 +595,7 @@ error:
     return 0;
 }
 
+
 // Sum
 static
 float
@@ -596,6 +604,7 @@ vector_sum(vector *v) {
     
     float sum = 0;
     
+    //#pragma omp parallel for simd reduction (+:sum)
     vector_foreach(v) {
         sum += VECTOR(v, index);
     }

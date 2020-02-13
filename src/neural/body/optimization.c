@@ -28,7 +28,6 @@ optimization_back_propagation(neural_cell *cell) {
                             ? Vector.create(body->signal->rows)
                             : Vector.copy(cell->context->prime.error);
     vector_check_print(base_error, "Base error (Eo) vector for back propagate is broken");
-    vector_values_check(base_error);
 
     // Eo — error from the neurons in front
     size_t axon_dimension = 0;
@@ -41,14 +40,11 @@ optimization_back_propagation(neural_cell *cell) {
                 // En = Ei * Wi
                 struct neuron_state front_prime = axon->context->prime;
                 vector *front_error = Vector.copy(front_prime.error);
-                vector_values_check(front_error);
                 vector_check_print(front_error, "Error vector of front neuron %zdx%zd", axon->context->layer_index, axon->context->position);
                 // dE/dY = SUM(dX/dY * dE/dX)
                 front_error = Vector.num.mul(front_error, VECTOR(front_prime.transfer, index));
                 // Eo += En
-                vector_values_check(base_error);
                 base_error = Vector.add(base_error, front_error);
-                vector_values_check(base_error);
                 axon_dimension++;
 
                 free(front_error);
@@ -100,26 +96,25 @@ optimization_back_propagation(neural_cell *cell) {
     // Calculate the derivative of each output with respect to their input.
     vector *activation_derivative = cell->nucleus.activation.derivative(cell->context);
     vector_check(activation_derivative);
-    vector_values_check(base_error);
 
     // E = Eo * R'(Z) * ... - current layer error
     base_error = Vector.mul(base_error, activation_derivative);
-    vector_values_check(base_error);
    
     // Cost = Cost(Activation(Transfer(XW))) = C(R(Z(XW)))
     // C'(W) = C'(R) * R'(Z) * Z'(W) = E * Z'(X)
     matrix *cost_weight_prime = Matrix.copy(body->weight);
-    vector_values_check(transfer_derivative_over_signal->vector);
-    matrix_foreach(cost_weight_prime) {
-        // float term = MATRIX(transfer_derivative_over_signal, row, column);
-        vector *cw_prime = Matrix.column(transfer_derivative_over_signal, row);
-        cw_prime = Vector.mul(cw_prime, base_error);
+    //#pragma omp parallel for
+    for(size_t row = 0; row < cost_weight_prime->rows; row++) {
+        vector *row_prime = Matrix.column(transfer_derivative_over_signal, row);
+        for (size_t column = 0; column < (cost_weight_prime)->columns ; column++) {
+            vector *cw_prime = Vector.mul(Vector.copy(row_prime), base_error);
 
-        MATRIX(cost_weight_prime, row, column) = Vector.sum.all(cw_prime) / cw_prime->size;
-        Vector.delete(cw_prime);
+            MATRIX(cost_weight_prime, row, column) = Vector.sum.all(cw_prime) / cw_prime->size;
+            Vector.delete(cw_prime);
+        }
+        Vector.delete(row_prime);
     }
     matrix_check(cost_weight_prime);
-    vector_values_check(cost_weight_prime->vector);
 
     // Garbage Control
     if(prime->activation) {
@@ -161,8 +156,6 @@ optimization_sgd(void *_cell, float learning_rate, float *params)
     struct neuron_state *prime = &cell->context->prime;
 
     // dW = x * Eo
-    vector_values_check(body->weight->vector);
-    vector_values_check(prime->weight->vector);
     // matrix *delta_weight = Matrix.mul(Matrix.copy(body->weight),
     //                                   prime->weight);
     matrix *delta_weight = Matrix.copy(prime->weight);

@@ -10,7 +10,7 @@
 
 static float          mean_squared(neuron_context *context, matrix *target);
 static vector *       mean_squared_derivative(neuron_context *context, matrix *target);
-static vector *       cost_loss_mean_squared(vector *predicted, vector *target);
+// static vector *       cost_loss_mean_squared(vector *predicted, vector *target);
 static vector *       cost_loss_mean_squared_derivative(vector *predicted, vector *target);
 
 static float          cross_entropy(neuron_context *context, matrix *target);
@@ -65,7 +65,7 @@ mean_squared_derivative(neuron_context *context, matrix *target) {
 }
 
 
-
+/* Unused 
 static
 vector *
 cost_loss_mean_squared(vector *predicted, vector *target) {
@@ -76,6 +76,7 @@ cost_loss_mean_squared(vector *predicted, vector *target) {
     
     return loss;
 }
+*/
 
 static
 vector *
@@ -89,31 +90,33 @@ cost_loss_mean_squared_derivative(vector *predicted, vector *target) {
 
 
 // Cross Entropy
-//static
-//float cost_loss_cross_entropy(float predicted, float target) {
-    //   "%s * (%M * log(%v) * (%s - %M) * log(%s - %v)"
-//    return -1. * (target * log(predicted) + (1. - target) * log(1. - predicted));
-//}
-//
-//static
-//float
-//cost_loss_cross_entropy_derivative(float predicted, float target) {
-//    return -1. * (target / predicted + (1 - target) / (1 - predicted));
-//}
-//
-//static
-//vector *
-//cost_loss_cross_entropy_vector_derivative(vector *predicted, vector *target) {
-//    float rate = 0.00001;
-//    float one = 1;
-//    float minus_one = -1;
-//    vector *loss = Vector.add(Vector.div(Vector.copy(target), predicted),
-//                              Vector.div(Vector.add(Vector.mul(Vector.copy(target), &minus_one), &one),
-//                                         Vector.add(Vector.mul(Vector.copy(predicted),
-//                                                               &minus_one),
-//                                                    &one)));
-//    return target;
-//}
+/* Unused
+static
+float cost_loss_cross_entropy(float predicted, float target) {
+  //   "%s * (%M * log(%v) * (%s - %M) * log(%s - %v)"
+    return -1. * (target * log(predicted) + (1. - target) * log(1. - predicted));
+}
+
+static
+float
+cost_loss_cross_entropy_derivative(float predicted, float target) {
+    return -1. * (target / predicted + (1 - target) / (1 - predicted));
+}
+
+static
+vector *
+cost_loss_cross_entropy_vector_derivative(vector *predicted, vector *target) {
+    float rate = 0.00001;
+    float one = 1;
+    float minus_one = -1;
+    vector *loss = Vector.add(Vector.div(Vector.copy(target), predicted),
+                              Vector.div(Vector.add(Vector.mul(Vector.copy(target), &minus_one), &one),
+                                         Vector.add(Vector.mul(Vector.copy(predicted),
+                                                               &minus_one),
+                                                    &one)));
+    return target;
+}
+*/
 
 static 
 double log0(double number) {
@@ -145,6 +148,7 @@ cross_entropy(neuron_context *context, matrix *target) {
     
     vector *neurons_loss = Vector.create(samples_count);
 
+    //#pragma omp parallel for
     for(size_t index = 0; index < samples_count; index++) {
         vector *sample_predicted = Matrix.column(predicted_matrix, index);
         vector *sample_target = Matrix.column(target_matrix, index);
@@ -156,7 +160,7 @@ cross_entropy(neuron_context *context, matrix *target) {
     }
 
 
-    float loss = Vector.sum.all(neurons_loss);
+    float loss = Vector.sum.all(neurons_loss) / neurons_loss->size * -1.;
     
     Matrix.delete(predicted_matrix);
     Matrix.delete(target_matrix);
@@ -185,38 +189,29 @@ cross_entropy_derivative(neuron_context *context, matrix *target) {
 static
 float
 cost_loss_cross_entropy_vector(vector *predicted, vector *target) {
-    vector_values_check(predicted);
-
     vector *logPredicted = Vector.map(Vector.copy(predicted), log0);
-    vector_values_check(logPredicted);
 
-    float loss = Vector.dot(target, logPredicted) * -1;
+    float loss = Vector.dot(target, logPredicted);
 
     Vector.delete(logPredicted);
 
     return loss;
 
-error:
-    return 0;
 }
 
+/* Unused
 static
 vector *
 cost_loss_cross_entropy_vector_binary(vector *predicted, vector *target) {
-    vector_values_check(predicted);
-
     vector *logPredicted = Vector.map(Vector.copy(predicted), log0);
-    vector_values_check(logPredicted);
     vector *oneMinusTarget = Vector.num.add(
                                               Vector.num.mul(Vector.copy(target), -1.),
                                               1.);
-    vector_values_check(oneMinusTarget);
     vector *logOneMinusPredicted = Vector.map(
                                               Vector.num.add(
                                                              Vector.num.mul(Vector.copy(predicted), -1.),
                                                              1.),
                                               log0);
-    vector_values_check(logOneMinusPredicted);
     vector *loss = Vector.num.mul(
                               Vector.add(
                                          Vector.mul(Vector.copy(logPredicted), target),
@@ -228,37 +223,28 @@ cost_loss_cross_entropy_vector_binary(vector *predicted, vector *target) {
     Vector.delete(oneMinusTarget);
     Vector.delete(logOneMinusPredicted);
     
-    vector_values_check(loss);
     return loss;
-error:
-    return NULL;
+
 }
-
-
+*/
 
 static
 vector *
 cost_loss_cross_entropy_vector_derivative(vector *predicted, vector *target) {
-    vector_values_check(predicted);
-
     vector *predictedSafe = Vector.num.sub(Vector.copy(predicted), 10e-5);
     vector *targetOverPredicted = Vector.num.mul(
                                                 Vector.div(Vector.copy(target),
                                                            predictedSafe),
                                                 -1.);
-    vector_values_check(targetOverPredicted);
     vector *oneMinusTarget = Vector.num.add(
                                               Vector.num.mul(Vector.copy(target), -1.),
                                               1.);
-    vector_values_check(oneMinusTarget);
     vector *oneMinusPredicted = Vector.num.add(
                                               Vector.num.mul(Vector.copy(predictedSafe), -1.),
                                               1.);
-    vector_values_check(oneMinusPredicted);
     vector *oneMinusDivision = Vector.div(Vector.copy(oneMinusTarget), 
                                           oneMinusPredicted);
     
-    vector_values_check(oneMinusDivision);
     vector *loss = Vector.add(Vector.copy(targetOverPredicted), 
                               oneMinusDivision);
 
@@ -269,10 +255,7 @@ cost_loss_cross_entropy_vector_derivative(vector *predicted, vector *target) {
     Vector.delete(oneMinusPredicted);
     Vector.delete(oneMinusDivision);
 
-    vector_values_check(loss);
 
     return loss;
 
-error:
-    return NULL;
 }

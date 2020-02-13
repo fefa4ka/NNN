@@ -52,7 +52,6 @@ void
 __router_create_synapse(neural_cell *from_cell, neural_cell *to_cell) {
     neuron_ccheck(from_cell, "Broken source cell");
     neuron_ccheck(to_cell, "Broken destination cell");
-    struct neuron_state *from_cell_body = &from_cell->context->body;
     struct neuron_state *to_cell_body = &to_cell->context->body;
 
     size_t synapse_index = 0;
@@ -68,16 +67,14 @@ __router_create_synapse(neural_cell *from_cell, neural_cell *to_cell) {
         }
     } while(to_cell->synapse[synapse_index++]);
     synapse_index--;
-    
+   
     to_cell->impulse_ready = realloc(to_cell->impulse_ready, synapse_index * sizeof(enum bool));
-    check(synapse_index - from_cell_body->signal->rows >= 0, "New size may be only greater or equal");
     memset(to_cell->impulse_ready + to_cell_body->signal->rows, 0, (synapse_index - to_cell_body->signal->rows) * sizeof(enum bool));
     
     Matrix.reshape(to_cell_body->signal, synapse_index, to_cell_body->signal->columns);
     Neuron.weight.init(to_cell);
     matrix_check(to_cell_body->signal);
 
-    check(synapse_index == to_cell_body->signal->rows == to_cell_body->weight->rows, "Signal and weight dimesion not proper");
     check(to_cell->synapse[synapse_index] == NULL, "Last synapse pointer isn't NULL");
 
     return;

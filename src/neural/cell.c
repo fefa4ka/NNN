@@ -199,7 +199,6 @@ static
 neural_cell *
 fire(neural_cell *cell, matrix *data) {
     neuron_ccheck(cell, "Argument Cell");
-    matrix_check_print(data, "For neuron fire");
 
     set_signal(cell, data);
     init_weight(cell);
@@ -208,8 +207,11 @@ fire(neural_cell *cell, matrix *data) {
     fire_forward(cell);
     
     cell->activated = false;
+    
+    if(cell->context->layer_index) {
+        memset(cell->impulse_ready, 0, cell->context->body.signal->columns * sizeof(enum bool));
+    }
 
-    memset(cell->impulse_ready, 0, cell->context->body.signal->columns * sizeof(enum bool));
     return cell;
 
 error:
@@ -282,12 +284,9 @@ matrix *
 collect_synapse_signal(neural_cell *cell) {
     size_t dimension = 0;
     vector **impulse;
-    neuron_ccheck(cell, "Broken cell from argument");
     
     impulse = malloc(cell->context->body.signal->columns * sizeof(vector *));
     while(cell->synapse[dimension]) {
-        neuron_ccheck(cell->synapse[dimension], "Cell in synapse terminal");
-
         if (dimension > cell->context->body.signal->columns) {
             impulse = realloc(impulse, (dimension + 1) * sizeof(vector *));
             check_memory(impulse);
@@ -298,7 +297,6 @@ collect_synapse_signal(neural_cell *cell) {
         }
 
         impulse[dimension] = cell->synapse[dimension]->context->body.activation;
-        vector_check(impulse[dimension]);
         
         dimension++;
     }
@@ -339,7 +337,7 @@ neural_cell *
 init_weight(neural_cell *cell) {
     struct neuron_state *body = &cell->context->body;
     neuron_state_check(*body, "Init weight");
-    size_t dimension_diff = body->signal->columns - body->weight->rows;
+    long dimension_diff = body->signal->columns - body->weight->rows;
     check(dimension_diff >= 0, "Signal columns should be more or equal to weight rows");
     
     if (dimension_diff > 0)
@@ -386,7 +384,6 @@ static
 neural_cell *
 set_signal(neural_cell *cell, matrix *data) {
     struct neuron_state *body = &cell->context->body;
-    vector_values_check(data->vector);
     
     Matrix.delete(body->signal);
     body->signal = Matrix.copy((matrix*)data);
@@ -408,7 +405,6 @@ transfer(neural_cell *cell) {
     body->transfer = kernel->transfer.function(body->signal,
                                                body->weight,
                                                body->bias);
-    vector_values_check(body->transfer);
     vector_check_print(cell->context->body.transfer, "Transfer is broken");
     
     return cell;
@@ -426,15 +422,10 @@ activation(neural_cell *cell) {
     vector *activation = kernel->activation.of(cell->context);
     Vector.delete(body->activation);
     body->activation = activation;
-    vector_check_print(cell->context->body.activation, "Activation is broken");
-    vector_values_check(body->activation);
     
     cell->activated = true;
     
     return cell;
-    
-error:
-    return NULL;
 }
 
 

@@ -14,19 +14,27 @@
 #include <stdlib.h>
 #include <time.h>
 
+//#include <immintrin.h>
+//#include "omp.h"
+
 #include "number.h"
 #include "../util/sort.h"
 
 #define VECTOR_TYPE "t_Vec"
 #define VECTOR_HASH_TYPE "t_VectorHash"
 
-#define vector_check_print(vector, message, ...) { check_memory_print(vector, message, ##__VA_ARGS__); check((vector)->type == VECTOR_TYPE, "Wrong vector type. " message, ##__VA_ARGS__); check((vector)->size, "Vector size doesn't set. " message, ##__VA_ARGS__); }
+#define vector_check_print(vector, message, ...) { check_memory_print(vector, message, ##__VA_ARGS__); check((vector)->size, "Vector size doesn't set. " message, ##__VA_ARGS__); }
 #define vector_check(vector) vector_check_print(vector, "")
 #define vector_values_check(vector) vector_foreach(vector) check(isnan(VECTOR(vector, index)) == false && isinf(VECTOR(vector, index)) == false, "v[%zd] = %f", index, VECTOR(vector, index))
 #define VECTOR(vector, index) *((vector)->values + index)
 
+#define PRAGMA(x) _Pragma(#x)
+
+#define EPSILON 2.220446049250313e-16
+
 #define vector_foreach(vector) \
     for(size_t index = 0; index < (vector)->size; index++) \
+
 
 typedef struct
 {

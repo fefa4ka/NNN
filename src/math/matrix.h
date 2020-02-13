@@ -16,10 +16,10 @@
 #define MATRIX(matrix, row, column) *((matrix)->vector->values + row * ((matrix)->columns) + column)
 #define MATRIX_TYPE "t_Mat"
 
-#define MATRIX_IS_MATRIX(matrix) ((matrix)->type == MATRIX_TYPE && (matrix)->columns && (matrix)->rows && (matrix)->vector->size && (matrix)->columns * (matrix)->rows == (matrix)->vector->size)
+//#define MATRIX_IS_MATRIX(matrix) ((matrix)->type == MATRIX_TYPE && (matrix)->columns && (matrix)->rows && (matrix)->vector->size && (matrix)->columns * (matrix)->rows == (matrix)->vector->size)
 
 #define matrix_check_print(matrix, message, ...) { check_memory(matrix); \
-check((matrix)->type == MATRIX_TYPE, "Wrong matrix type. " message, ##__VA_ARGS__); \
+check(strcmp((matrix)->type, MATRIX_TYPE) == 0, "Wrong matrix type. " message, ##__VA_ARGS__); \
 check((matrix)->columns && (matrix)->rows, "Matrix size not set. " message, ##__VA_ARGS__); \
 check((matrix)->vector->size && (matrix)->columns * (matrix)->rows == (matrix)->vector->size, \
     "Matrix value broken %zdx%zd = %d. " message, (matrix)->rows, (matrix)->columns, ((matrix)->vector && (matrix)->vector->size) || 0, ##__VA_ARGS__); \

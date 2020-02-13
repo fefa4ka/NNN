@@ -35,9 +35,9 @@ static size_t probability_get_field_index(P_space *space, char *field);
 //float probability_variance_of_function(P_space *space, float operation(float));
 
 // Helpers
-static P_space *__probability_uniform(P_space *space);
-static P_space *__probability_space_count_events(P_space *space);
-static P_space *__probability_space_count_events_occurs(P_space *space);
+// static P_space *__probability_uniform(P_space *space);
+// static P_space *__probability_space_count_events(P_space *space);
+// static P_space *__probability_space_count_events_occurs(P_space *space);
 
 const struct probability_library Probability = {
     .delete = probability_delete,
@@ -59,7 +59,8 @@ const struct probability_library Probability = {
     .bayes = probability_bayes,
     .expected = probability_expected_value,
     .variance = probability_variance,
-    .covariance = probability_covariance
+    .covariance = probability_covariance,
+    .correlation = probability_correlation
 };
 
 
@@ -95,6 +96,7 @@ P_space
 probability_space_from_matrix(matrix *samples, char **fields) {
     size_t space_width_size = sizeof(vector*) * samples->columns;
     char **_fields = malloc(samples->columns * sizeof(char*));
+
     for(size_t index = 0; index < samples->columns; index++) {
         _fields[index] = strdup(fields[index]);
     }
@@ -110,8 +112,6 @@ probability_space_from_matrix(matrix *samples, char **fields) {
         .covariance = Matrix.create(samples->columns, samples->columns),
         .correlation = Matrix.create(samples->columns, samples->columns)
     };
-    
-    __probability_space_count_events(&space);
     
     return space;
 }
@@ -154,6 +154,7 @@ probability_get_field_index(P_space *space, char *field) {
 }
 
 // Count helpers
+/* Unused
 static
 P_space *
 __probability_uniform(P_space *space) {
@@ -197,6 +198,7 @@ __probability_space_count_events(P_space *space) {
     return space;
 }
 
+
 static
 P_space *
 __probability_space_count_events_occurs(P_space *space) {
@@ -207,7 +209,7 @@ __probability_space_count_events_occurs(P_space *space) {
     
     return space;
 }
-
+*/
 
 
 /* Probability Mass Function */
@@ -315,7 +317,7 @@ probability_expected_value(P_space *space, char *field) {
 static
 float
 probability_expected_value_conditional(P_space *space, char *expected_field, char *related_field, float value) {
-    char *fields[] = {expected_field, related_field, NULL};
+    char *fields[] = { expected_field, related_field, NULL };
     float expected_value = 0;
     vector *expected = NULL;
     vector *related = NULL;
@@ -373,7 +375,7 @@ probability_covariance(P_space *space, char *field, char *related_field)
     
     float covariance = 0;
     
-    
+    //#pragma omp parallel for reduction (+:covariance) 
     vector_foreach(origin) {
         float x = VECTOR(origin, index);
         float y = VECTOR(related, index);
@@ -394,71 +396,70 @@ probability_correlation(P_space *space, char *field, char *related_field)
     float mu_field = space->variance[field_index];
     float mu_related = space->variance[related_field_index];
     
-    float correlation = MATRIX(space->covariance, field_index, related_field_index)
-    / sqrt(mu_field * mu_related);
+    float correlation = MATRIX(space->covariance, field_index, related_field_index) / sqrt(mu_field * mu_related);
     
     return correlation;
 }
 
 
-//
-//static
-//float
-//probability_expected_value_of_function(P_space *space, char *field, float operation(float)) {
-//    float mu = 0;
-//
-//    PROBABILITY_SUM(space, field, mu, operation(x) * Px);
-//
-//    return mu;
-//}
+/* Unused
+static
+float
+probability_expected_value_of_function(P_space *space, char *field, float operation(float)) {
+    float mu = 0;
+
+    PROBABILITY_SUM(space, field, mu, operation(x) * Px);
+
+    return mu;
+}
 
 
-//
-//float probability_density(P_space *space, float a, float b) {
-//    float probability = 0;
-//
-//    float *proper_list = malloc(space->items * sizeof(float));
-//    size_t proper_size = 0;
-//
-//    PROBABILITY_FOREACH(space) {
-//        if(VECTOR(space->events, index) > a && VECTOR(space->events, index) < b) {
-//            proper_list[proper_size++] = VECTOR(space->events, index);
-//        }
-//    }
-//
-//    proper_list = realloc(proper_list, proper_size * sizeof(float));
-//
-//    merge_sort(proper_list, 0, proper_size);
-//
-//    while(--proper_size) {
-//        float a = proper_list[proper_size - 1];
-//        float b = proper_list[proper_size];
-//        float Pb = probability_uniform_of(space, b);
-//
-//        probability += Pb * (b - a);
-//    }
-//
-//    return probability;
-//}
-//
-///* Properties */
-//float probability_matrix_expected_value(P_space *space) {
-//    float mu = 0;
-//
-//    PROBABILITY_SUM(space, mu, x * Px);
-//
-//    return mu;
-//}
-//
-//
-//
-//float probability_variance_of_function(P_space *space, float operation(float)) {
-//    float sigma2 = 0;
-//    float mu = probability_matrix_expected_value_of_function(space, operation);
-//
-//    PROBABILITY_SUM(space, sigma2, pow(operation(x) - mu, 2) * Px);
-//
-//    return sigma2;
-//}
-//
 
+float probability_density(P_space *space, float a, float b) {
+    float probability = 0;
+
+    float *proper_list = malloc(space->items * sizeof(float));
+    size_t proper_size = 0;
+
+    PROBABILITY_FOREACH(space) {
+        if(VECTOR(space->events, index) > a && VECTOR(space->events, index) < b) {
+            proper_list[proper_size++] = VECTOR(space->events, index);
+        }
+    }
+
+    proper_list = realloc(proper_list, proper_size * sizeof(float));
+
+    merge_sort(proper_list, 0, proper_size);
+
+    while(--proper_size) {
+        float a = proper_list[proper_size - 1];
+        float b = proper_list[proper_size];
+        float Pb = probability_uniform_of(space, b);
+
+        probability += Pb * (b - a);
+    }
+
+    return probability;
+}
+
+// Properties 
+float probability_matrix_expected_value(P_space *space) {
+    float mu = 0;
+
+    PROBABILITY_SUM(space, mu, x * Px);
+
+    return mu;
+}
+
+
+
+float probability_variance_of_function(P_space *space, float operation(float)) {
+    float sigma2 = 0;
+    float mu = probability_matrix_expected_value_of_function(space, operation);
+
+    PROBABILITY_SUM(space, sigma2, pow(operation(x) - mu, 2) * Px);
+
+    return sigma2;
+}
+
+*/
