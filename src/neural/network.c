@@ -55,7 +55,7 @@ create(neural_layer layers[]) {
             .size = 0
         },
         .neurons = malloc(sizeof(neural_cell*)),
-        .history = malloc(sizeof(network_loss))
+        .history = NULL 
     };
         
     size_t layer_index = 0;
@@ -281,7 +281,6 @@ train(neural_network *network, data_batch *training_data, float learning_rate, i
         float validation_accuracy = accuracy(network, validation_target);
         
         if(epoch_index) {
-
             printf("\033[A\033[2K");
             printf("\033[A\033[2K");
             printf("\033[A\033[2K");
@@ -295,7 +294,7 @@ train(neural_network *network, data_batch *training_data, float learning_rate, i
         
 
         /* Save perfomance result to history */
-        network_loss *history = &network->history[epoch];
+        network_loss *history = network->history + epoch_index;
 
         history->train.error = train_error_mean;
         history->train.accuracy = train_accuracy_mean;

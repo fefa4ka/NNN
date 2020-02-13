@@ -7,7 +7,7 @@ data_batch       iris_data;
 
 char *data_load()
 {
-    char *target_labels[] = {"species", NULL};
+    char *target_labels[] = { "species", NULL };
     data_set iris = Data.csv("./test/data/iris.csv", NULL, target_labels);
     matrix *binary_target = Data.convert.vector_to_binary(iris.target.values->vector);
     data_set iris_binary = Data.matrix(iris.features.values, binary_target);

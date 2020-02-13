@@ -283,12 +283,14 @@ static
 matrix *
 collect_synapse_signal(neural_cell *cell) {
     size_t dimension = 0;
+    size_t impulse_allocated = cell->context->body.signal->columns;
     vector **impulse;
     
-    impulse = malloc(cell->context->body.signal->columns * sizeof(vector *));
+    impulse = malloc(impulse_allocated * sizeof(vector *));
     while(cell->synapse[dimension]) {
-        if (dimension > cell->context->body.signal->columns) {
-            impulse = realloc(impulse, (dimension + 1) * sizeof(vector *));
+        if (dimension >= impulse_allocated) {
+            impulse_allocated = dimension + 1;
+            impulse = realloc(impulse, impulse_allocated * sizeof(vector *));
             check_memory(impulse);
         }
         

@@ -82,6 +82,7 @@ static
 data_set
 data_from_csv(char *filename, char** feature_labels, char **target_labels) {
     csv *data = data_shuffle(csv_readfile(filename));
+
     char **_fields = malloc((data->columns + 1) * sizeof(char*));
     char **_target_labels = malloc(data->columns * sizeof(char*));
     size_t _target_labels_index = 0;
@@ -91,16 +92,17 @@ data_from_csv(char *filename, char** feature_labels, char **target_labels) {
     _fields[data->columns] = NULL;
     
     matrix *all_data = Matrix.csv(data, _fields);
-    
+
+    char **_feature_labels = calloc(all_data->columns + 1, sizeof(char*));
+
     if(feature_labels == NULL) {
         size_t index = 0;
-        feature_labels = calloc(all_data->columns, sizeof(char*));
 
         while(_fields[index]) {
             size_t target_label_index = 0;
             while(target_labels[target_label_index]) {
                 if(strcmp(_fields[index], target_labels[target_label_index]) != 0) {
-                    feature_labels[index] = _fields[index];
+                    _feature_labels[index] = _fields[index];
                 } else {
                     _target_labels[_target_labels_index] = _fields[index];
                     _target_labels_index++;
@@ -110,13 +112,20 @@ data_from_csv(char *filename, char** feature_labels, char **target_labels) {
             
             index++;
         }
-        feature_labels[index++] = NULL;
-        feature_labels = realloc(feature_labels, index * sizeof(char*));
+        _feature_labels[index] = NULL;
+        _feature_labels = realloc(_feature_labels, ++index * sizeof(char*));
+    } else {
+        size_t index = 0;
+        while(feature_labels[index]) {
+            _feature_labels[index] = strdup(feature_labels[index]);
+        }
     }
 
     _target_labels = realloc(_target_labels, (_target_labels_index + 1) * sizeof(char *));
-    matrix *features = Matrix.csv(data, feature_labels);
-    matrix *target = Matrix.csv(data, target_labels);
+    _target_labels[_target_labels_index] = NULL;
+
+    matrix *features = Matrix.csv(data, _feature_labels);
+    matrix *target = Matrix.csv(data, _target_labels);
     csv_delete(data);
     
     data_set dataset = {
@@ -125,7 +134,7 @@ data_from_csv(char *filename, char** feature_labels, char **target_labels) {
             .values = all_data
         },
         .features = {
-            .labels = feature_labels,
+            .labels = _feature_labels,
             .values = features,
         },
         .target = {
