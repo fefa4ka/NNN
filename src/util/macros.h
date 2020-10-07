@@ -6,8 +6,7 @@
 //  Copyright © 2018 alexander. All rights reserved.
 //
 
-#ifndef macros_h
-#define macros_h
+#pragma once
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -80,13 +79,6 @@
  */
 #define MAP_LIST(f, ...) EVAL(MAP_LIST1(f, __VA_ARGS__, ()()(), ()()(), ()()(), 0))
 
-enum bool {
-    false = 0,
-    true = 1
-};
-typedef enum bool bool;
-
 float random_range(float min, float max);
 
 
-#endif /* macros_h */

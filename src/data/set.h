@@ -6,11 +6,11 @@
 //  Copyright © 2018 alexander. All rights reserved.
 //
 
-#ifndef set_h
-#define set_h
+#pragma once 
 
 #include <stdio.h>
-#include "../math/probability.h"
+#include <math/matrix.h>
+#include <math/probability.h>
 
 typedef struct {    
     struct {
@@ -56,7 +56,6 @@ struct data_library {
     } convert;
 };
 
-extern const struct data_library Data;
+extern struct data_library Data;
 
 
-#endif /* set_h */

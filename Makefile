@@ -1,8 +1,8 @@
-CC=gcc-9
+CC=gcc
 WFLAGS=-Wall -Wextra
-CFLAGS=-g -Isrc -rdynamic -DNDEBUG $(WFLAGS) $(OPTFLAGS)
+CFLAGS=-g -Isrc -rdynamic -fPIC -DNDEBUG $(WFLAGS) $(OPTFLAGS)
 LDFLAGS=#-fopenmp
-LIBS=-ldl $(OPTLIBS)
+LIBS=-ldl -lm $(OPTLIBS)
 PREFIX?=/usr/local
 
 SOURCES=$(wildcard src/**/**/*.c src/**/*.c src/*.c)
@@ -17,10 +17,6 @@ SO_TARGET=$(patsubst %.a, %.so, $(TARGET))
 # The Target Build
 all: $(TARGET) $(SO_TARGET) test
 
-dev: CFLAGS=-fopenmp -mavx -g -Wall -Isrc -Wextra $(OPTFLAGS)
-dev: all
-
-$(TARGET): CFLAGS += -fPIC
 $(TARGET): build $(OBJECTS)
 	ar rcs $@ $(OBJECTS)
 	ranlib $@
@@ -33,6 +29,9 @@ build:
 
 # The Unit Tests
 .PHONY: test
+$(TESTS):
+	$(CC) $(CFLAGS) -o $@ $@.c $(TARGET) $(LIBS)
+
 test: CFLAGS += $(TARGET)
 test: $(TESTS)
 	sh ./test/run_test.sh

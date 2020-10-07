@@ -15,7 +15,7 @@
 
 struct transfer_library_function{
     vector *          (*function)(matrix *input, matrix *weight, float bias);
-    matrix *          (*derivative)(neuron_context *context, enum bool by_weight);
+    matrix *          (*derivative)(neuron_context *context, bool by_weight);
     
     size_t            dimension;
 };

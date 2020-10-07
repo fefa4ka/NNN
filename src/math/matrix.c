@@ -8,108 +8,6 @@
 
 #include "matrix.h"
 
-// Life Cycle
-static matrix *matrix_create(size_t rows, size_t columns);
-static matrix *matrix_create_from_list(size_t rows, size_t columns, float *values);
-static matrix *matrix_copy(matrix *original);
-static matrix *matrix_reshape(matrix *instance, size_t rows, size_t columns);
-static void   matrix_delete(matrix *instance);
-
-// Data
-static matrix *matrix_seed(matrix *instance, float default_value);
-static matrix *matrix_identity(size_t size);
-static matrix *matrix_diagonal_from_vector(vector *v);
-
-static matrix *matrix_from_cast(void *data, size_t rows, size_t columns);
-static matrix *matrix_from_csv(csv *file, char **fields);
-static matrix *matrix_from_vector(vector *v, size_t columns);
-static matrix *matrix_from_vectors(vector **vectors, size_t rows, size_t columns);
-
-static vector *matrix_column_vector(matrix *A, size_t column);
-
-// Transformation
-static matrix *matrix_transpose(matrix *instance);
-vector *vector_transformation_by_matrix(matrix *A, vector *x);
-
-// Operations
-static matrix *matrix_map(matrix *A, float operation(float));
-
-static matrix *matrix_multiplication_cast(matrix *A, void *some_b);
-static matrix *matrix_multiplication(matrix *A, matrix *B);
-static matrix *matrix_scalar_multiplication(matrix *A, float scalar);
-
-static matrix *matrix_division_cast(matrix *A, void *some_b);
-static matrix *matrix_division(matrix *A, matrix *B);
-static matrix *matrix_scalar_division(matrix *A, float scalar);
-
-static matrix *matrix_addition_cast(matrix *A, void *some_b);
-static matrix *matrix_addition(matrix *A, matrix *B);
-static matrix *matrix_scalar_addition(matrix *A, float scalar);
-
-static matrix *matrix_substraction_cast(matrix *A, void *some_b);
-static matrix *matrix_substraction(matrix *A, matrix *B);
-static matrix *matrix_scalar_substraction(matrix *A, float scalar);
-
-
-// Properties
-static float  matrix_sum(matrix *A);
-static float  matrix_trace(matrix *A);
-static float  matrix_frobenius_norm(matrix *A);
-static float  matrix_frobenius_norm_by_trace(matrix *A);
-
-// Relations
-enum bool     matrix_is_equal(matrix *A, matrix *B);
-
-// UI
-static void   matrix_print(matrix *instance);
-
-
-/* Library Structure */
-const struct matrix_library Matrix = {
-    .create = matrix_create,
-    .copy = matrix_copy,
-    .reshape = matrix_reshape,
-    .delete = matrix_delete,
-    
-    .print = matrix_print,
-    
-    .from = matrix_from_cast,
-    .csv = matrix_from_csv,
-    
-    .identity = matrix_identity,
-    .diagonal = matrix_diagonal_from_vector,
-    
-    .seed = matrix_seed,
-    .column = matrix_column_vector,
-    
-    .prop = {
-        .sum = matrix_sum,
-        .trace = matrix_trace,
-        .frobenius_norm = matrix_frobenius_norm_by_trace,
-    },
-    
-    .rel = {
-        .is_equal = matrix_is_equal
-    },
-    
-    .add = matrix_addition_cast,
-    .sub = matrix_substraction_cast,
-    .mul = matrix_multiplication_cast,
-    .div = matrix_division_cast,
-    
-    .transpose = matrix_transpose,
-    .map = matrix_map
-};
-
-
-/* Marcos */
-#define MATRIX_OPERATION(A, B, expression)                                                             \
-    matrix_foreach(A)                                                                                  \
-    {                                                                                                  \
-        MATRIX(A, row, column) = MATRIX(A, row, column) expression MATRIX(B, row, column);             \
-        check(MATRIX(A, row, column) == MATRIX(A, row, column),                                        \
-              "Operation x " #expression " %f is %f", MATRIX(B, row, column), MATRIX(A, row, column)); \
-    }
 
 /* Life Cycle */
 static
@@ -187,7 +85,7 @@ error:
 static
 matrix *
 matrix_identity(size_t size) {
-    matrix *instance = matrix_create(size, size);
+    matrix *instance = Matrix.create(size, size);
     
     while(size--) {
         MATRIX(instance, size, size) = 1;
@@ -197,19 +95,6 @@ matrix_identity(size_t size) {
 }
 
 // Create from
-static
-matrix *
-matrix_from_cast(void *data, size_t rows, size_t columns) {
-    if(IS(data, VECTOR_TYPE)) {
-        return matrix_from_vector((vector*)data, columns);
-    }
-    
-    if((int)*(void**)data != 0 && IS(*(void**)data, VECTOR_TYPE)) {
-        return matrix_from_vectors((vector**)data, rows, columns);
-    }
-    
-    return matrix_create_from_list(rows, columns, (float*)data);
-}
 
 static
 matrix *
@@ -247,24 +132,6 @@ error:
 
 static
 matrix *
-matrix_diagonal_from_vector(vector *v) {
-    vector_check(v);
-    matrix *A = matrix_create(v->size, v->size);
-    size_t index = v->size;
-    
-    while(index--) {
-        MATRIX(A, index, index) = VECTOR(v, index);
-    }
-    
-    return A;
-
-error:
-    return NULL;
-}
-
-
-static
-matrix *
 matrix_from_vectors(vector **vectors, size_t rows, size_t columns) {
     check_memory(vectors);
     check(rows > 0 && columns > 0, "Invalid matrix shape");
@@ -280,6 +147,38 @@ matrix_from_vectors(vector **vectors, size_t rows, size_t columns) {
 error:
     return NULL;
 }
+
+static
+matrix *
+matrix_from_cast(void *data, size_t rows, size_t columns) {
+    if(IS(data, VECTOR_TYPE)) {
+        return matrix_from_vector((vector*)data, columns);
+    }
+    
+    if((int)*(void**)data != 0 && IS(*(void**)data, VECTOR_TYPE)) {
+        return matrix_from_vectors((vector**)data, rows, columns);
+    }
+    
+    return matrix_create_from_list(rows, columns, (float*)data);
+}
+
+static
+matrix *
+matrix_diagonal_from_vector(vector *v) {
+    vector_check(v);
+    matrix *A = matrix_create(v->size, v->size);
+    size_t index = v->size;
+    
+    while(index--) {
+        MATRIX(A, index, index) = VECTOR(v, index);
+    }
+    
+    return A;
+
+error:
+    return NULL;
+}
+
 
 static
 matrix *
@@ -299,7 +198,7 @@ matrix_from_csv(csv *file, char *fields[]) {
         index++;
     }
     
-    matrix *data = matrix_transpose(matrix_from_vectors(values, index, file->rows));
+    matrix *data = Matrix.transpose(matrix_from_vectors(values, index, file->rows));
     
     // Garbage Control
     index = 0;
@@ -409,28 +308,6 @@ error:
 // Multiplication
 static
 matrix *
-matrix_multiplication_cast(matrix *A, void *some_b) {
-    if(IS(some_b, MATRIX_TYPE)) {
-        return matrix_multiplication(A, (matrix*)some_b);
-    }
-    
-    if(IS(some_b, VECTOR_TYPE)) {
-        vector *v_result = vector_transformation_by_matrix(A,
-                                                           (vector*)some_b);
-        matrix *m_result = Matrix.from(v_result, v_result->size, 1);
-        Vector.delete(v_result);
-        Matrix.delete(A);
-        
-        A = m_result;
-        return A;
-    }
-    
-    return matrix_scalar_multiplication(A,
-                                        ((number*)some_b)->value);
-}
-
-static
-matrix *
 matrix_multiplication(matrix *A, matrix *B) {
     matrix_check(A);
     matrix_check(B);
@@ -468,22 +345,30 @@ error:
     return NULL;
 }
 
-// Division
 static
 matrix *
-matrix_division_cast(matrix *A, void *some_b) {
+matrix_multiplication_cast(matrix *A, void *some_b) {
     if(IS(some_b, MATRIX_TYPE)) {
-        return matrix_division(A, (matrix*)some_b);
+        return matrix_multiplication(A, (matrix*)some_b);
     }
     
     if(IS(some_b, VECTOR_TYPE)) {
+        vector *v_result = vector_transformation_by_matrix(A,
+                                                           (vector*)some_b);
+        matrix *m_result = Matrix.from(v_result, v_result->size, 1);
+        Vector.delete(v_result);
+        Matrix.delete(A);
+        
+        A = m_result;
         return A;
     }
     
-    return matrix_scalar_division(A,
-                                  ((number*)some_b)->value);
+    return matrix_scalar_multiplication(A,
+                                        ((number*)some_b)->value);
 }
 
+
+// Division
 static
 matrix *
 matrix_division(matrix *A, matrix *B) {
@@ -509,22 +394,23 @@ error:
     return NULL;
 }
 
-// Addition
 static
 matrix *
-matrix_addition_cast(matrix *A, void *some_b) {
+matrix_division_cast(matrix *A, void *some_b) {
     if(IS(some_b, MATRIX_TYPE)) {
-        return matrix_addition(A, (matrix*)some_b);
+        return matrix_division(A, (matrix*)some_b);
     }
     
     if(IS(some_b, VECTOR_TYPE)) {
         return A;
     }
     
-    return matrix_scalar_addition(A,
+    return matrix_scalar_division(A,
                                   ((number*)some_b)->value);
 }
 
+
+// Addition
 static
 matrix *
 matrix_addition(matrix *A, matrix *B) {
@@ -550,22 +436,23 @@ error:
     return NULL;
 }
 
-// Subsraction
 static
 matrix *
-matrix_substraction_cast(matrix *A, void *some_b) {
+matrix_addition_cast(matrix *A, void *some_b) {
     if(IS(some_b, MATRIX_TYPE)) {
-        return matrix_substraction(A, (matrix*)some_b);
+        return matrix_addition(A, (matrix*)some_b);
     }
     
     if(IS(some_b, VECTOR_TYPE)) {
         return A;
     }
     
-    return matrix_scalar_substraction(A,
-                                      ((number*)some_b)->value);
+    return matrix_scalar_addition(A,
+                                  ((number*)some_b)->value);
 }
 
+
+// Subsraction
 static
 matrix *
 matrix_substraction(matrix *A, matrix *B) {
@@ -590,6 +477,22 @@ matrix_scalar_substraction(matrix *A, float scalar) {
 error:
     return NULL;
 }
+
+static
+matrix *
+matrix_substraction_cast(matrix *A, void *some_b) {
+    if(IS(some_b, MATRIX_TYPE)) {
+        return matrix_substraction(A, (matrix*)some_b);
+    }
+    
+    if(IS(some_b, VECTOR_TYPE)) {
+        return A;
+    }
+    
+    return matrix_scalar_substraction(A,
+                                      ((number*)some_b)->value);
+}
+
 
 // Other operations
 static
@@ -660,7 +563,7 @@ matrix_frobenius_norm_by_trace(matrix *A) {
     matrix_check(A);
     
     matrix *AT = matrix_copy(A);
-    matrix_transpose(AT);
+    Matrix.transpose(AT);
     
     matrix *A_AT = matrix_multiplication(A, AT);
     
@@ -677,7 +580,7 @@ error:
 
 
 /* Relations */
-enum bool
+bool
 matrix_is_equal(matrix *A, matrix *B) {
     matrix_check(A);
     matrix_check(B);
@@ -699,9 +602,9 @@ matrix_print(matrix *instance) {
     printf("\tMatrix: %dx%d\n\t\t[[\t", (int)((int)instance->vector->size / (int)instance->columns), (int)instance->columns);
     
     matrix_foreach(instance) {
-        enum bool is_head_or_tail = row < 5 || row > instance->rows - 5;
-        enum bool is_middle = row == 6;
-        enum bool is_shown = is_head_or_tail || is_middle;
+        bool is_head_or_tail = row < 5 || row > instance->rows - 5;
+        bool is_middle = row == 6;
+        bool is_shown = is_head_or_tail || is_middle;
         
         if(row != previous_row && is_shown) {
             if(row > 0) {
@@ -735,10 +638,48 @@ matrix *matrix_create_ui() {
     printf("MATRIX size MxN: ");
     scanf("%dx%d", &rows, &columns);
     
-    matrix *A = matrix_create((size_t)rows, (size_t)columns);
+    matrix *A = Matrix.create((size_t)rows, (size_t)columns);
     
     matrix_seed(A, 0);
     
     return A;
 }
+
+
+/* Library Structure */
+const struct matrix_library Matrix = {
+    .create = matrix_create,
+    .copy = matrix_copy,
+    .reshape = matrix_reshape,
+    .delete = matrix_delete,
+    
+    .print = matrix_print,
+    
+    .from = matrix_from_cast,
+    .csv = matrix_from_csv,
+    
+    .identity = matrix_identity,
+    .diagonal = matrix_diagonal_from_vector,
+    
+    .seed = matrix_seed,
+    .column = matrix_column_vector,
+    
+    .prop = {
+        .sum = matrix_sum,
+        .trace = matrix_trace,
+        .frobenius_norm = matrix_frobenius_norm_by_trace,
+    },
+    
+    .rel = {
+        .is_equal = matrix_is_equal
+    },
+    
+    .add = matrix_addition_cast,
+    .sub = matrix_substraction_cast,
+    .mul = matrix_multiplication_cast,
+    .div = matrix_division_cast,
+    
+    .transpose = matrix_transpose,
+    .map = matrix_map
+};
 

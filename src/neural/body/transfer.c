@@ -9,7 +9,7 @@
 #include "transfer.h"
 
 static vector *     transfer_linear_function(matrix *input, matrix *weight, float bias);
-static matrix *     transfer_linear_derivative(neuron_context *context, enum bool by_weight);
+static matrix *     transfer_linear_derivative(neuron_context *context, bool by_weight);
 
 
 /* Library structure */
@@ -37,7 +37,7 @@ transfer_linear_function(matrix *input, matrix *weight, float bias) {
 
 static
 matrix *
-transfer_linear_derivative(neuron_context *context, enum bool by_weight) {
+transfer_linear_derivative(neuron_context *context, bool by_weight) {
     if(by_weight) {
         return Matrix.copy(context->body.signal);
     } else {

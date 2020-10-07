@@ -91,8 +91,8 @@ cell_create(neuron_kernel nucleus, size_t layer, size_t position) {
             .context = context,
             .axon = calloc(1, sizeof(neural_cell *)),
             .synapse = calloc(1, sizeof(neural_cell *)),
-            .impulse_ready = calloc(1, sizeof(enum bool)),
-            .feedback_ready = calloc(1, sizeof(enum bool))
+            .impulse_ready = calloc(1, sizeof(bool)),
+            .feedback_ready = calloc(1, sizeof(bool))
         };
 
     return cell;
@@ -209,7 +209,7 @@ fire(neural_cell *cell, matrix *data) {
     cell->activated = false;
     
     if(cell->context->layer_index) {
-        memset(cell->impulse_ready, 0, cell->context->body.signal->columns * sizeof(enum bool));
+        memset(cell->impulse_ready, 0, cell->context->body.signal->columns * sizeof(bool));
     }
 
     return cell;
@@ -242,8 +242,8 @@ impulse(neural_cell *source, neural_cell *destination) {
     neuron_ccheck(destination, "Broken destination cell");
     
     size_t index = 0;
-    enum bool fire = true;
-    enum bool impulse = false;
+    bool fire = true;
+    bool impulse = false;
     
     while(destination->synapse[index]) {
         if(destination->synapse[index] == source) {
@@ -442,7 +442,7 @@ get_cell_layer(neural_cell *cell) {
     neuron_ccheck(cell, "Argument cell");
 
     neural_cell **terminal = cell->synapse;
-    enum bool is_forward = false;
+    bool is_forward = false;
     if (*terminal == NULL){
         terminal = cell->axon;
         is_forward = true;

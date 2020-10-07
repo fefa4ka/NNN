@@ -10,7 +10,7 @@
 #define body_h
 
 #include <stdio.h>
-#include "../../math/matrix.h"
+#include <math/matrix.h>
 
 struct neuron_state {
     matrix *                     weight;

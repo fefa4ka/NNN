@@ -59,10 +59,10 @@ typedef struct neural_cell {
     struct neural_cell  **synapse;
     struct neural_cell  **axon;
 
-    enum bool           activated;
-    enum bool           dropout;
-    enum bool           *impulse_ready;
-    enum bool           *feedback_ready;
+    bool           activated;
+    bool           dropout;
+    bool           *impulse_ready;
+    bool           *feedback_ready;
 } neural_cell;
 
 

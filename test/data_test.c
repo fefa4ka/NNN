@@ -17,7 +17,7 @@ error:
 
 char *iris_load() {
     char *target_labels[] = {"species", NULL};
-    set = Data.csv("/Users/fefa4ka/Development/math/math/dataset/iris.csv", NULL, target_labels);
+    set = Data.csv("./test/data/iris.csv", NULL, target_labels);
     char *iris_test = data_set_test(set);
     test_assert(iris_test == NULL, "Iris data set corrupted");    
 

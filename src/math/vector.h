@@ -6,34 +6,19 @@
 //  Copyright © 2018 alexander. All rights reserved.
 //
 
-#ifndef vector_h
-#define vector_h
+#pragma once
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <time.h>
 
 //#include <immintrin.h>
 //#include "omp.h"
 
+#include <util/sort.h>
 #include "number.h"
-#include "../util/sort.h"
-
-#define VECTOR_TYPE "t_Vec"
-#define VECTOR_HASH_TYPE "t_VectorHash"
-
-#define vector_check_print(vector, message, ...) { check_memory_print(vector, message, ##__VA_ARGS__); check((vector)->size, "Vector size doesn't set. " message, ##__VA_ARGS__); }
-#define vector_check(vector) vector_check_print(vector, "")
-#define vector_values_check(vector) vector_foreach(vector) check(isnan(VECTOR(vector, index)) == false && isinf(VECTOR(vector, index)) == false, "v[%zd] = %f", index, VECTOR(vector, index))
-#define VECTOR(vector, index) *((vector)->values + index)
-
-#define PRAGMA(x) _Pragma(#x)
-
-#define EPSILON 2.220446049250313e-16
-
-#define vector_foreach(vector) \
-    for(size_t index = 0; index < (vector)->size; index++) \
 
 
 typedef struct
@@ -102,8 +87,8 @@ struct vector_library {
     
     struct {
         float     (*angle)(vector *v, vector *w);
-        enum bool (*is_equal)(vector *v, vector *w);
-        enum bool (*is_perpendicular)(vector *v, vector *w);
+        bool      (*is_equal)(vector *v, vector *w);
+        bool      (*is_perpendicular)(vector *v, vector *w);
     } rel;
     
     // Operations
@@ -129,6 +114,33 @@ extern const struct vector_library Vector;
 
 vector *vector_create_ui(void);
 
-#endif /* vector_h */
-    
 
+/* Macros */
+#define VECTOR_TYPE "t_Vec"
+#define VECTOR_HASH_TYPE "t_VectorHash"
+
+#define vector_check_print(vector, message, ...) { check_memory_print(vector, message, ##__VA_ARGS__); check((vector)->size, "Vector size doesn't set. " message, ##__VA_ARGS__); }
+#define vector_check(vector) vector_check_print(vector, "")
+#define vector_values_check(vector) vector_foreach(vector) check(isnan(VECTOR(vector, index)) == false && isinf(VECTOR(vector, index)) == false, "v[%zd] = %f", index, VECTOR(vector, index))
+#define VECTOR(vector, index) *((vector)->values + index)
+
+#define PRAGMA(x) _Pragma(#x)
+
+#define EPSILON 2.220446049250313e-16
+
+#define vector_foreach(vector) \
+    for(size_t index = 0; index < (vector)->size; index++) \
+
+
+#define vector_operation(result, v, w, expression)                                    \
+    vector_foreach(result)                                                            \
+    {                                                                                 \
+        VECTOR(result, index) = VECTOR(v, index) expression VECTOR(w, index);         \
+    }
+
+// PRAGMA(omp parallel for) 
+#define vector_scalar_operation(result, v, scalar, expression)                                           \
+    vector_foreach(result)                                                                               \
+    {                                                                                                    \
+        VECTOR(result, index) = VECTOR(v, index) expression scalar;                                      \
+    }

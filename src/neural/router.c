@@ -34,7 +34,7 @@ router_any(neural_network *network, size_t layer) {
             check_memory(cell->axon);
             
             free(cell->feedback_ready);
-            cell->feedback_ready = calloc(network->resolution.dimensions[layer + 1], sizeof(enum bool));
+            cell->feedback_ready = calloc(network->resolution.dimensions[layer + 1], sizeof(bool));
             check_memory(cell->feedback_ready);
             
             for(size_t terminal_index = 0; cell->axon[terminal_index]; terminal_index++) {
@@ -68,8 +68,8 @@ __router_create_synapse(neural_cell *from_cell, neural_cell *to_cell) {
     } while(to_cell->synapse[synapse_index++]);
     synapse_index--;
    
-    to_cell->impulse_ready = realloc(to_cell->impulse_ready, synapse_index * sizeof(enum bool));
-    memset(to_cell->impulse_ready + to_cell_body->signal->rows, 0, (synapse_index - to_cell_body->signal->rows) * sizeof(enum bool));
+    to_cell->impulse_ready = realloc(to_cell->impulse_ready, synapse_index * sizeof(bool));
+    memset(to_cell->impulse_ready + to_cell_body->signal->rows, 0, (synapse_index - to_cell_body->signal->rows) * sizeof(bool));
     
     Matrix.reshape(to_cell_body->signal, synapse_index, to_cell_body->signal->columns);
     Neuron.weight.init(to_cell);

@@ -230,11 +230,11 @@ probability_mass_and(P_space *space, char **fields, float *values) {
     size_t occur = 0;
     
     for(size_t index = 0; index < space->samples->rows; index++) {
-        enum bool is_suitable = false;
+        bool is_suitable = false;
         
         for(size_t column = 0; column < space->samples->columns; column++) {
             size_t field_index = 0;
-            enum bool is_breaked = false;
+            bool is_breaked = false;
             while(fields[field_index]) {
                 if(strcmp(space->fields[column], fields[field_index]) == 0) {
                     if(MATRIX(space->samples, index, column) == values[field_index]) {

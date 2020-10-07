@@ -8,29 +8,6 @@
 
 #include "set.h"
 
-static data_set     data_from_matrix(matrix *features, matrix *target);
-static data_set     data_from_csv(char *filename, char** fields, char **target);
-static void         data_delete(data_set *data);
-static void         data_print(data_set *data);
-static csv *        data_shuffle(csv *data);
-static data_set *   data_part(data_set *set, size_t pool_offset, size_t pool_size);
-static data_set **  data_mini_batch(data_set *set, size_t batch_size);
-static data_batch   data_split(data_set *set, size_t batch_size, size_t train, size_t validation, size_t test);
-static matrix *     data_vector_to_binary_columns(vector *column);
-static vector *     data_binary_to_vector(matrix *binary);
-
-const struct data_library Data = {
-    .matrix = data_from_matrix,
-    .csv = data_from_csv,
-    .split = data_split,
-    .print = data_print,
-    .convert = {
-        .vector_to_binary = data_vector_to_binary_columns,
-        .binary_to_vector = data_binary_to_vector
-    },
-    .delete = data_delete
-};
-
 
 static
 data_set
@@ -76,6 +53,32 @@ data_from_matrix(matrix *features, matrix *target) {
             .values = Matrix.copy(target)
         }
     };
+}
+
+static
+csv *
+data_shuffle(csv *data) {
+    // Shuffle
+    size_t set_size = data->rows;
+    for(size_t index = 0; index < set_size; index++) {
+        size_t shuffled = (size_t)random_range(0, set_size);
+
+        if(shuffled == index) {
+            if(index == set_size - 1) {
+                if(index != 0) {
+                    shuffled = index - 1;
+                }
+            } else {
+                shuffled = index + 1;
+            }
+        }
+
+        char **shuffled_row = data->values[index];
+        data->values[index] = data->values[shuffled];
+        data->values[shuffled] = shuffled_row;
+    }
+
+    return data;
 }
 
 static
@@ -282,31 +285,7 @@ data_split(data_set *set, size_t batch_size, size_t train, size_t validation, si
     };
 }
 
-static
-csv *
-data_shuffle(csv *data) {
-    // Shuffle
-    size_t set_size = data->rows;
-    for(size_t index = 0; index < set_size; index++) {
-        size_t shuffled = (size_t)random_range(0, set_size);
-        
-        if(shuffled == index) {
-            if(index == set_size - 1) {
-                if(index != 0) {
-                    shuffled = index - 1;
-                }
-            } else {
-                shuffled = index + 1;
-            }
-        }
-        
-        char **shuffled_row = data->values[index];
-        data->values[index] = data->values[shuffled];
-        data->values[shuffled] = shuffled_row;
-    }
-    
-    return data;
-}
+
 
 static
 void
@@ -325,4 +304,18 @@ data_print(data_set *data) {
     log_info("Target: %s", data->target.labels[0]);
     Matrix.print(data->target.values);
 }
+
+
+struct data_library Data = {
+    .matrix = data_from_matrix,
+    .csv = data_from_csv,
+    .split = data_split,
+    .print = data_print,
+    .convert = {
+        .vector_to_binary = data_vector_to_binary_columns,
+        .binary_to_vector = data_binary_to_vector
+    },
+    .delete = data_delete
+};
+
 

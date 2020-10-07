@@ -9,139 +9,6 @@
 
 #include "vector.h"
 
-// Life Cycle
-static number *      number_create(float value);
-static vector *      vector_create(size_t size);
-static vector *      vector_create_from_list(size_t size, float *values);
-static vector *      vector_create_from_list_char(size_t size, char **values);
-static vector *      vector_copy(vector *original);
-static vector *      vector_reshape(vector *instance, size_t size);
-static void          vector_delete(void *instance);
-
-// Data
-static vector *      vector_seed(vector *instance, float default_value);
-static vector_hash * vector_hash_list(size_t size, char **list);
-
-// Operations
-static vector *      vector_addition_cast(vector *v, void *term);
-static vector *      vector_addition(vector *v, vector *w);
-static vector *      vector_scalar_addition(vector *v, float scalar);
-
-static vector *      vector_substraction_cast(vector *v, void *subtrahend);
-static vector *      vector_substraction(vector *v, vector *w);
-static vector *      vector_scalar_substraction(vector *v, float scalar);
-
-static vector *      vector_multiplication_cast(vector *v, void *factor);
-static vector *      vector_vector_multiplication(vector *v, vector *w);
-static vector *      vector_scalar_multiplication(vector *v, float scalar);
-
-static vector *      vector_division_cast(vector *v, void *divider);
-static vector *      vector_vector_division(vector *v, vector *w);
-static vector *      vector_scalar_division(vector *v, float scalar);
-
-static float         vector_dot_product(vector *v, vector *w);
-static vector *      vector_map(vector *v, double operation(double));
-static vector *      vector_map_param(vector *v, float operation(float, float*), float *operation_params);
-
-// Properties
-static int           vector_index_of(vector *v, float needle);
-static float         vector_length(vector *v);
-static float         vector_l_norm(vector *v, int p);
-static size_t        vector_max_index(vector *v);
-static float         vector_max_norm(vector *v);
-static vector *      vector_unit(vector *v);
-static vector *      vector_uniq(vector *instance);
-
-// Sums
-static float        vector_sum(vector *v);
-static float        vector_sum_to(vector *v, size_t to_index);
-static float        vector_sum_between(vector *v, size_t from_index, size_t to_index);
-
-// Relations
-static float         vector_angle(vector *v, vector *w);
-static enum bool     vector_is_perpendicular(vector *v, vector *w);
-static enum bool     vector_is_equal(vector *v, vector *w);
-static vector *      vector_shuffle(vector *v);
-
-// UI
-static void          vector_print(vector *instance);
-
-
-/* Library Structure */
-const struct vector_library Vector = {
-    .create = vector_create,
-    .copy = vector_copy,
-    .reshape = vector_reshape,
-    .seed = vector_seed,
-    .delete = vector_delete,
-    
-    .print = vector_print,
-    
-    .from = {
-        .number = number_create,
-        .floats = vector_create_from_list,
-        .strings = vector_create_from_list_char,
-        .hash = vector_hash_list
-    },
-    
-    .prop = {
-        .index_of = vector_index_of,
-        .length = vector_length,
-        .unit = vector_unit,
-        .l_norm = vector_l_norm,
-        .max = {
-            .index = vector_max_index,
-            .norm = vector_max_norm
-        },
-        .uniq = vector_uniq
-    },
-    
-    .sum = {
-        .all = vector_sum,
-        .to = vector_sum_to,
-        .between = vector_sum_between
-    },
-    
-    .rel = {
-        .is_equal = vector_is_equal,
-        .angle = vector_angle,
-        .is_perpendicular = vector_is_perpendicular
-    },
-    
-    // Operations
-    .add = vector_addition_cast,
-    .sub = vector_substraction_cast,
-    .mul = vector_multiplication_cast,
-    .div = vector_division_cast,
-    
-    .num = {
-        .add = vector_scalar_addition,
-        .sub = vector_scalar_substraction,
-        .mul = vector_scalar_multiplication,
-        .div = vector_scalar_division
-    },
-    
-    .dot = vector_dot_product,
-    .map = vector_map,
-    .map_of = vector_map_param,
-    .shuffle = vector_shuffle
-};
-
-
-/* Macros */
-#define VECTOR_OPERATION(result, v, w, expression)                                    \
-    vector_foreach(result)                                                            \
-    {                                                                                 \
-        VECTOR(result, index) = VECTOR(v, index) expression VECTOR(w, index);         \
-    }
-
-// PRAGMA(omp parallel for) 
-#define VECTOR_SCALAR_OPERATION(result, v, scalar, expression)                                           \
-    vector_foreach(result)                                                                               \
-    {                                                                                                    \
-        VECTOR(result, index) = VECTOR(v, index) expression scalar;                                      \
-    }
-
 /* Life Cycle */
 static
 number *
@@ -198,7 +65,7 @@ vector_create_from_list_char(size_t size, char **values) {
     check(size, "Vector size should be greater than zero.");
     
     vector *instance = calloc(1, sizeof(vector));
-    enum bool is_hash = false;
+    bool is_hash = false;
     check_memory(instance);
     
     size_t vector_size = size * sizeof(float);
@@ -348,6 +215,33 @@ vector_hash_list(size_t size, char **list) {
 // Addition
 static
 vector *
+vector_addition(vector *v, vector *w) {
+    vector_check(v);
+    vector_check(w);
+    check(v->size == w->size, "Vector size doesn't match");
+
+    vector_operation(v, v, w, +);
+
+    return v;
+
+error:
+    return NULL;
+}
+
+static
+vector *
+vector_scalar_addition(vector *v, float scalar) {
+    vector_check(v);
+    vector_scalar_operation(v, v, scalar, +);
+    
+    return v;
+
+error:
+    return NULL;
+}
+
+static
+vector *
 vector_addition_cast(vector *v, void *term) {
     vector_check(v);
     
@@ -362,26 +256,15 @@ error:
     return NULL;
 }
 
+
+// Substraction
 static
 vector *
-vector_addition(vector *v, vector *w) {
+vector_substraction(vector *v, vector *w) {
     vector_check(v);
     vector_check(w);
-    check(v->size == w->size, "Vector size doesn't match");
-
-    VECTOR_OPERATION(v, v, w, +);
-
-    return v;
-
-error:
-    return NULL;
-}
-
-static
-vector *
-vector_scalar_addition(vector *v, float scalar) {
-    vector_check(v);
-    VECTOR_SCALAR_OPERATION(v, v, scalar, +);
+    
+    vector_operation(v, v, w, -);
     
     return v;
 
@@ -389,8 +272,18 @@ error:
     return NULL;
 }
 
+static
+vector *
+vector_scalar_substraction(vector *v, float scalar) {
+    vector_check(v);
+    vector_scalar_operation(v, v, scalar, -);
+    
+    return v;
 
-// Substraction
+error:
+    return NULL;
+}
+
 static
 vector *
 vector_substraction_cast(vector *v, void *subtrahend) {
@@ -407,50 +300,15 @@ error:
     return NULL;
 }
 
-static
-vector *
-vector_substraction(vector *v, vector *w) {
-    vector_check(v);
-    vector_check(w);
-    
-    VECTOR_OPERATION(v, v, w, -);
-    
-    return v;
-
-error:
-    return NULL;
-}
-
-static
-vector *
-vector_scalar_substraction(vector *v, float scalar) {
-    vector_check(v);
-    VECTOR_SCALAR_OPERATION(v, v, scalar, -);
-    
-    return v;
-
-error:
-    return NULL;
-}
 
 // Multiplication
-static
-vector *
-vector_multiplication_cast(vector *v, void *factor) {
-    vector_check(v);
-    return vector_vector_multiplication(v, (vector *)factor);
-    
-error:
-    return NULL;
-}
-
 static
 vector *
 vector_vector_multiplication(vector *v, vector *w) {
     vector_check(v);
     vector_check(w);
     check(v->size == w->size, "Vectors size doesn't match");
-    VECTOR_OPERATION(v, v, w, *);
+    vector_operation(v, v, w, *);
 
     return v;
 
@@ -462,7 +320,7 @@ static
 vector *
 vector_scalar_multiplication(vector *v, float scalar) {
     vector_check(v);
-    VECTOR_SCALAR_OPERATION(v, v, scalar, *);
+    vector_scalar_operation(v, v, scalar, *);
     
     return v;
 
@@ -470,8 +328,42 @@ error:
     return NULL;
 }
 
+static
+vector *
+vector_multiplication_cast(vector *v, void *factor) {
+    vector_check(v);
+    return vector_vector_multiplication(v, (vector *)factor);
+    
+error:
+    return NULL;
+}
+
 
 // Division
+static
+vector *
+vector_vector_division(vector *v, vector *w) {
+    vector_check(v);
+    vector_operation(v, v, w, /);
+    
+    return v;
+    
+error:
+    return NULL;
+}
+
+static
+vector *
+vector_scalar_division(vector *v, float scalar) {
+    vector_check(v);
+    vector_scalar_operation(v, v, scalar, /);
+    
+    return v;
+    
+error:
+    return NULL;
+}
+
 static
 vector *
 vector_division_cast(vector *v, void *divider) {
@@ -488,29 +380,6 @@ error:
     return NULL;
 }
 
-static
-vector *
-vector_vector_division(vector *v, vector *w) {
-    vector_check(v);
-    VECTOR_OPERATION(v, v, w, /);
-    
-    return v;
-    
-error:
-    return NULL;
-}
-
-static
-vector *
-vector_scalar_division(vector *v, float scalar) {
-    vector_check(v);
-    VECTOR_SCALAR_OPERATION(v, v, scalar, /);
-    
-    return v;
-    
-error:
-    return NULL;
-}
 
 // Dot
 static
@@ -751,7 +620,7 @@ error:
 }
 
 static
-enum bool
+bool
 vector_is_perpendicular(vector *v, vector *w) {
     vector_check(v);
     vector_check(w);
@@ -767,12 +636,12 @@ error:
 }
 
 static
-enum bool
+bool
 vector_is_equal(vector *v, vector *w) {
     vector_check(v);
     vector_check(w);
     
-    enum bool is_equal = v->size == w->size
+    bool is_equal = v->size == w->size
     && memcmp(v->values, w->values, v->size) == 0;
     
     return is_equal;
@@ -858,5 +727,62 @@ vector_create_ui() {
 }
 
 
-
-
+/* Library Structure */
+const struct vector_library Vector = {
+    .create = vector_create,
+    .copy = vector_copy,
+    .reshape = vector_reshape,
+    .seed = vector_seed,
+    .delete = vector_delete,
+    
+    .print = vector_print,
+    
+    .from = {
+        .number = number_create,
+        .floats = vector_create_from_list,
+        .strings = vector_create_from_list_char,
+        .hash = vector_hash_list
+    },
+    
+    .prop = {
+        .index_of = vector_index_of,
+        .length = vector_length,
+        .unit = vector_unit,
+        .l_norm = vector_l_norm,
+        .max = {
+            .index = vector_max_index,
+            .norm = vector_max_norm
+        },
+        .uniq = vector_uniq
+    },
+    
+    .sum = {
+        .all = vector_sum,
+        .to = vector_sum_to,
+        .between = vector_sum_between
+    },
+    
+    .rel = {
+        .is_equal = vector_is_equal,
+        .angle = vector_angle,
+        .is_perpendicular = vector_is_perpendicular
+    },
+    
+    // Operations
+    .add = vector_addition_cast,
+    .sub = vector_substraction_cast,
+    .mul = vector_multiplication_cast,
+    .div = vector_division_cast,
+    
+    .num = {
+        .add = vector_scalar_addition,
+        .sub = vector_scalar_substraction,
+        .mul = vector_scalar_multiplication,
+        .div = vector_scalar_division
+    },
+    
+    .dot = vector_dot_product,
+    .map = vector_map,
+    .map_of = vector_map_param,
+    .shuffle = vector_shuffle
+};

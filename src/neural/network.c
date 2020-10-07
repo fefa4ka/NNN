@@ -19,7 +19,7 @@ static neural_cell **       get_layer_cells(neural_network *network, size_t laye
 static float                compute_error(neural_network *network, matrix *signal, matrix *target);
 static float                accuracy(neural_network *network,matrix *target);
 static void                 cell_back_propagation(neural_cell *cell, float learning_rate);
-static enum bool            neuron_error_impulse(neural_cell *source, neural_cell *destination);
+static bool            neuron_error_impulse(neural_cell *source, neural_cell *destination);
 static void                 train(neural_network *network, data_batch *training_data, float learning_rate, int epoch);
 static float                back_propagation(neural_network *network, matrix *signal, matrix *target, float learning_rate);
 static neural_network *     seed_next_layer(neural_network *network, neural_layer *layer);
@@ -284,7 +284,6 @@ train(neural_network *network, data_batch *training_data, float learning_rate, i
             printf("\033[A\033[2K");
             printf("\033[A\033[2K");
             printf("\033[A\033[2K");
-            printf("\033[A\033[2K");
         } else {
             printf("\033[A\033[2K");
             printf("\033[A\033[2K");
@@ -407,14 +406,14 @@ error:
 
 
 static
-enum bool
+bool
 neuron_error_impulse(neural_cell *source, neural_cell *destination) {
     neuron_ccheck(source, "Broken source cell");
     neuron_ccheck(destination, "Broken destination cell");
 
     size_t index = 0;
-    enum bool fire = true;
-    enum bool impulse = false;
+    bool fire = true;
+    bool impulse = false;
     
     while(destination->axon[index]) {
         if(destination->axon[index] == source) {
@@ -435,7 +434,7 @@ neuron_error_impulse(neural_cell *source, neural_cell *destination) {
     
     if(fire) {
         free(destination->feedback_ready);
-        destination->feedback_ready = calloc(index, sizeof(enum bool));
+        destination->feedback_ready = calloc(index, sizeof(bool));
         //        destination->error = memset(destination->error, 0, index * sizeof(int));
         return true;
     }

@@ -6,31 +6,12 @@
 //  Copyright © 2018 alexander. All rights reserved.
 //
 
-#ifndef matrix_h
-#define matrix_h
+#pragma once
 
 #include <stdio.h>
+
+#include <data/csv.h>
 #include "vector.h"
-#include "../data/csv.h"
-
-#define MATRIX(matrix, row, column) *((matrix)->vector->values + row * ((matrix)->columns) + column)
-#define MATRIX_TYPE "t_Mat"
-
-//#define MATRIX_IS_MATRIX(matrix) ((matrix)->type == MATRIX_TYPE && (matrix)->columns && (matrix)->rows && (matrix)->vector->size && (matrix)->columns * (matrix)->rows == (matrix)->vector->size)
-
-#define matrix_check_print(matrix, message, ...) { check_memory(matrix); \
-check(strcmp((matrix)->type, MATRIX_TYPE) == 0, "Wrong matrix type. " message, ##__VA_ARGS__); \
-check((matrix)->columns && (matrix)->rows, "Matrix size not set. " message, ##__VA_ARGS__); \
-check((matrix)->vector->size && (matrix)->columns * (matrix)->rows == (matrix)->vector->size, \
-    "Matrix value broken %zdx%zd = %d. " message, (matrix)->rows, (matrix)->columns, ((matrix)->vector && (matrix)->vector->size) || 0, ##__VA_ARGS__); \
-vector_check_print((matrix)->vector, "Matrix values vector broken. " message, ##__VA_ARGS__); \
-}
-#define matrix_check(matrix) matrix_check_print(matrix, "")
-
-
-#define matrix_foreach(matrix) \
-    for(size_t row = 0; row < matrix->rows; row++) \
-        for (size_t column = 0; column < (matrix)->columns ; column++) \
 
 typedef struct
 {
@@ -70,7 +51,7 @@ struct matrix_library {
     } prop;
     
     struct {
-        enum bool   (*is_equal)(matrix *A, matrix *B);
+        bool        (*is_equal)(matrix *A, matrix *B);
     } rel;
     
     matrix *        (*add)(matrix *A, void *term);
@@ -84,5 +65,31 @@ struct matrix_library {
 
 extern const struct matrix_library Matrix;
 
-#endif /* matrix_h */
 
+/* Marcos */
+#define MATRIX(matrix, row, column) *((matrix)->vector->values + row * ((matrix)->columns) + column)
+#define MATRIX_TYPE "t_Mat"
+
+//#define MATRIX_IS_MATRIX(matrix) ((matrix)->type == MATRIX_TYPE && (matrix)->columns && (matrix)->rows && (matrix)->vector->size && (matrix)->columns * (matrix)->rows == (matrix)->vector->size)
+
+#define matrix_check_print(matrix, message, ...) { check_memory(matrix); \
+check(strcmp((matrix)->type, MATRIX_TYPE) == 0, "Wrong matrix type. " message, ##__VA_ARGS__); \
+check((matrix)->columns && (matrix)->rows, "Matrix size not set. " message, ##__VA_ARGS__); \
+check((matrix)->vector->size && (matrix)->columns * (matrix)->rows == (matrix)->vector->size, \
+    "Matrix value broken %zdx%zd = %d. " message, (matrix)->rows, (matrix)->columns, ((matrix)->vector && (matrix)->vector->size) || 0, ##__VA_ARGS__); \
+vector_check_print((matrix)->vector, "Matrix values vector broken. " message, ##__VA_ARGS__); \
+}
+#define matrix_check(matrix) matrix_check_print(matrix, "")
+
+
+#define matrix_foreach(matrix) \
+    for(size_t row = 0; row < matrix->rows; row++) \
+        for (size_t column = 0; column < (matrix)->columns ; column++) \
+
+#define MATRIX_OPERATION(A, B, expression)                                                             \
+    matrix_foreach(A)                                                                                  \
+    {                                                                                                  \
+        MATRIX(A, row, column) = MATRIX(A, row, column) expression MATRIX(B, row, column);             \
+        check(MATRIX(A, row, column) == MATRIX(A, row, column),                                        \
+              "Operation x " #expression " %f is %f", MATRIX(B, row, column), MATRIX(A, row, column)); \
+    }

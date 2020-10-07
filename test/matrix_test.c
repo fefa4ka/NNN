@@ -20,13 +20,13 @@ char *matrix_delete() {
 }
 
 char *vector_transpose_test() {
-    vector *v = Vector.create(random_range(1, 1000));
-    vector *w = Vector.create(random_range(1, 1000));
+    vector *v = Vector.seed(Vector.create(random_range(100, 10000)), 0);
+    vector *w = Vector.seed(Vector.create(v->size), 0);
     vector_check(v);
     vector_check(w);
 
     matrix *V = Matrix.from(v, v->size, 1);
-    matrix *W = Matrix.from(v, v->size, 1);
+    matrix *W = Matrix.from(w, w->size, 1);
     matrix_check(V);
     matrix_check(W);
 
