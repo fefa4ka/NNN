@@ -6,14 +6,13 @@
 //  Copyright © 2018 alexander. All rights reserved.
 //
 
-#ifndef probability_h
-#define probability_h
+#pragma once 
 
 #include <stdio.h>
 #include "matrix.h"
 
-#include "../util/sort.h"
-#include "../data/csv.h"
+#include <util/sort.h>
+#include <data/csv.h>
 
 #define PROBABILITY_TYPE "t_Prob"
 
@@ -61,6 +60,4 @@ struct probability_library {
 };
 
 extern const struct probability_library Probability;
-
-#endif /* probability_h */
 

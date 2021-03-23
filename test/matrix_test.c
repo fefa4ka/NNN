@@ -20,7 +20,7 @@ char *matrix_delete() {
 }
 
 char *vector_transpose_test() {
-    vector *v = Vector.seed(Vector.create(random_range(100, 10000)), 0);
+    vector *v = Vector.seed(Vector.create(random_range(10000, 100000)), 0);
     vector *w = Vector.seed(Vector.create(v->size), 0);
     vector_check(v);
     vector_check(w);

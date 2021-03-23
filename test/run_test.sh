@@ -7,7 +7,7 @@ do
     then
         if $VALGRIND ./$i 2>> test/process.log
         then
-           echo "\n----------"
+           echo "----------"
         else
            echo "[FAILED] ./$i: Read more test/process.log\n"
         fi

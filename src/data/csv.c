@@ -8,52 +8,6 @@
 #include "csv.h"
 
 
-static char **parse_csv( const char *line );
-static void free_csv_line( char **parsed );
-// static char **split_on_unescaped_newlines(const char *txt);
-static char *fread_csv_line(FILE *fp, int max_line_size, int *done, int *err);
-
-csv *csv_readfile(char *filename) {
-    csv *parsed = calloc(1, sizeof(csv));
-    FILE *csv_file = NULL;
-    csv_file = fopen(filename, "r");
-    int err, done = 0;
-
-    char *header_line = fread_csv_line(csv_file, 1024, &done, &err);
-
-    parsed->type = CSV_TYPE;
-    parsed->fields = parse_csv(header_line);
-    parsed->rows = 0;
-    parsed->columns = 0;
-    parsed->values = malloc(sizeof(char*));
-
-    while(parsed->fields[parsed->columns]) {
-        parsed->columns += 1;
-    }
-
-    while(done != 1) {
-        char *current_line = fread_csv_line(csv_file, 1024, &done, &err);
-        parsed->values = realloc(parsed->values, sizeof(char*) * (parsed->rows + 1));
-        parsed->values[parsed->rows++] = parse_csv(current_line);
-        free(current_line);
-    }
-    free(header_line);
-
-    parsed->rows -= 1;
-
-    fclose(csv_file);
-    
-    return parsed;
-}
-
-void csv_delete(csv *instance) {
-    for(size_t index = 0; index < instance->rows; index++) {
-        free_csv_line(instance->values[index]);
-    }
-    free(instance->values);
-    free_csv_line(instance->fields);
-    free(instance);
-}
 
 char **csv_row(csv *instance, size_t row) {
     return instance->values[row];
@@ -87,16 +41,6 @@ char **csv_field(csv *instance, char *field_name) {
     return values;
 }
 
-static void free_csv_line( char **parsed )
-{
-    char **ptr;
-    
-    for ( ptr = parsed; *ptr; ptr++ ) {
-        free( *ptr );
-    }
-    
-    free( parsed );
-}
 
 static int count_fields( const char *line )
 {
@@ -158,7 +102,7 @@ parse_csv( const char *line )
         return NULL;
     }
     
-    buf = malloc( sizeof(char*) * (fieldcnt+1) );
+    buf = malloc(sizeof(char*) * (fieldcnt + 1));
     
     if ( !buf ) {
         return NULL;
@@ -447,4 +391,68 @@ fread_csv_line(FILE *fp, int max_line_size, int *done, int *err) {
     return result;
 }
 
+csv *csv_readfile(char *filename) {
+    csv *parsed = calloc(1, sizeof(csv));
+    FILE *csv_file = NULL;
+    csv_file = fopen(filename, "r");
+    int err, done = 0;
 
+    char *header_line = fread_csv_line(csv_file, 1024, &done, &err);
+
+    parsed->type = CSV_TYPE;
+    parsed->fields = parse_csv(header_line);
+    parsed->rows = 0;
+    parsed->columns = 0;
+    parsed->values = malloc(sizeof(char*));
+
+    while(parsed->fields[parsed->columns]) {
+        parsed->columns += 1;
+    }
+
+    while(done != 1) {
+        char *current_line = fread_csv_line(csv_file, 1024, &done, &err);
+        parsed->values = realloc(parsed->values, sizeof(char*) * (parsed->rows + 1));
+        parsed->values[parsed->rows++] = parse_csv(current_line);
+        free(current_line);
+    }
+    free(header_line);
+
+    parsed->rows -= 1;
+
+    fclose(csv_file);
+    
+    return parsed;
+}
+
+static void free_csv_line( char **parsed )
+{
+    char **ptr;
+    
+    for ( ptr = parsed; *ptr; ptr++ ) {
+        free( *ptr );
+    }
+    
+    free( parsed );
+}
+void csv_delete(csv *instance) {
+    for(size_t index = 0; index <= instance->rows; index++) {
+        free_csv_line(instance->values[index]);
+    }
+    free(instance->values);
+    free_csv_line(instance->fields);
+    free(instance);
+}
+
+
+
+struct csv_library Csv = {
+    .from = {
+        .file = csv_readfile
+    },
+    .delete = csv_delete,
+    .get = {
+        .row = csv_row,
+        .column = csv_column,
+        .field = csv_field
+    }
+};

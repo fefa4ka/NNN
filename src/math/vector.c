@@ -103,7 +103,12 @@ vector_uniq(vector *instance) {
     float *uniq = uniq_floats(instance->values, instance->size, &size);
     check_memory(uniq);
 
-    return vector_create_from_list(size, uniq);
+    vector *uniq_vector = vector_create_from_list(size, uniq);
+
+    free(uniq);
+
+    return uniq_vector;
+
 error:
     return NULL;
 }

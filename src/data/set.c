@@ -84,7 +84,7 @@ data_shuffle(csv *data) {
 static
 data_set
 data_from_csv(char *filename, char** feature_labels, char **target_labels) {
-    csv *data = data_shuffle(csv_readfile(filename));
+    csv *data = data_shuffle(Csv.from.file(filename));
 
     char **_fields = malloc((data->columns + 1) * sizeof(char*));
     char **_target_labels = malloc(data->columns * sizeof(char*));
@@ -129,7 +129,7 @@ data_from_csv(char *filename, char** feature_labels, char **target_labels) {
 
     matrix *features = Matrix.csv(data, _feature_labels);
     matrix *target = Matrix.csv(data, _target_labels);
-    csv_delete(data);
+    Csv.delete(data);
     
     data_set dataset = {
         .data = {
@@ -153,7 +153,7 @@ static
 void
 data_delete(data_set *data) {
     for(size_t index = 0; index < data->data.values->columns; index++) {
-        free(data->data.fields[index++]);
+        free(data->data.fields[index]);
     }
 
     free(data->data.fields);
@@ -293,15 +293,16 @@ data_print(data_set *data) {
     size_t field_index = 0;
     log_info("Data Set Information");
     log_info("Features:");
+    printf("\t");
     while(data->features.labels[field_index]) {
-        printf("\t%s", data->features.labels[field_index]);
+        printf("\t\t%s", data->features.labels[field_index]);
         field_index++;
     }
     printf("\n");
     
     Matrix.print(data->features.values);
     
-    log_info("Target: %s", data->target.labels[0]);
+    log_info("Target:\t\t%s", data->target.labels[0]);
     Matrix.print(data->target.values);
 }
 

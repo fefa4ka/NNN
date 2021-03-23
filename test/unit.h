@@ -8,13 +8,16 @@
 #include <time.h>
 #include <sys/resource.h>
 #include <errno.h>
+#include <malloc.h>
 
 #define test_time_init() \
     float start_time, finish_time
 
 #define test_memory_init() \
-    struct rusage memory_usage; \
-    size_t start_memory, finish_memory
+    struct mallinfo start_memory, finish_memory; \
+    start_memory = mallinfo(); \
+    int allocated, freed, remain = start_memory.uordblks;
+ 
 
 #define test_init()       \
     char *message = NULL; \
@@ -30,17 +33,19 @@
 
 #define test_time_tick(message)                   \
     start_time = (float)clock() / CLOCKS_PER_SEC; \
-    getrusage(RUSAGE_SELF, &memory_usage);        \
-    start_memory = memory_usage.ru_maxrss;        \
+    start_memory = mallinfo(); \ 
     printf("- \033[1m%s\033[0m\n", " " #message);
 
 #define test_time_tock(message) \
     finish_time = (float)clock() / CLOCKS_PER_SEC; \
-    finish_memory = memory_usage.ru_maxrss;        \
-    printf(". %s took %f sec, %ld kb used\n",                   \
+    finish_memory = mallinfo(); \
+    freed = finish_memory.fordblks - start_memory.fordblks; \
+    allocated = freed + finish_memory.uordblks - remain - start_memory.uordblks; \
+    remain = finish_memory.uordblks - start_memory.uordblks; \
+    printf(". %s took %f sec, %d b allocated, %d freed\n",                   \
            " " #message,                           \
            finish_time - start_time,               \
-           finish_memory - start_memory);              
+           allocated > 0 ? allocated : 0, freed);
 
 #define test_try(tries) for (int try = 0; try < tries; try ++)
 

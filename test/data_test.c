@@ -6,6 +6,7 @@ matrix *binary_target;
 
 char *data_set_test(data_set set) {
     test_assert(set.data.fields != NULL && set.features.labels != NULL && set.target.labels != NULL, "Data set fields is NULL");
+    test_assert(set.data.values != NULL && set.features.values != NULL && set.target.values != NULL, "Data set values is NULL");
     matrix_check(set.data.values);
     matrix_check(set.features.values);
     matrix_check(set.target.values);
@@ -20,6 +21,8 @@ char *iris_load() {
     set = Data.csv("./test/data/iris.csv", NULL, target_labels);
     char *iris_test = data_set_test(set);
     test_assert(iris_test == NULL, "Iris data set corrupted");    
+
+    Data.print(&set);
 
     return NULL;
 }
@@ -46,11 +49,7 @@ char *data_delete() {
     Data.delete(&set);
     Matrix.delete(binary_target);
 
-    if(data_set_test(set)) {
-        return NULL;
-    } else {
-        return "Data set exist after delete";
-    }
+    return NULL;
 }
 
 char *all_tests() {

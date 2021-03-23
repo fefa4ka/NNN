@@ -191,7 +191,7 @@ matrix_from_csv(csv *file, char *fields[]) {
     
     while(fields[index] != 0) {
         values = realloc(values, (index + 1) * sizeof(vector*));
-        char **data = csv_field(file, fields[index]);
+        char **data = Csv.get.field(file, fields[index]);
         values[index] = Vector.from.strings(file->rows, data);
         
         free( data );
@@ -340,7 +340,7 @@ matrix_scalar_multiplication(matrix *A, float scalar) {
     Vector.mul(A->vector, &scalar);
     
     return A;
-    
+
 error:
     return NULL;
 }
@@ -599,8 +599,9 @@ matrix_print(matrix *instance) {
     
     size_t previous_row = 0;
     
-    printf("\tMatrix: %dx%d\n\t\t[[\t", (int)((int)instance->vector->size / (int)instance->columns), (int)instance->columns);
     
+    printf("\t\t[[\t");
+
     matrix_foreach(instance) {
         bool is_head_or_tail = row < 5 || row > instance->rows - 5;
         bool is_middle = row == 6;
@@ -625,6 +626,7 @@ matrix_print(matrix *instance) {
     
     printf("]]");
     
+    printf("\n\t\tMatrix: %dx%d", (int)((int)instance->vector->size / (int)instance->columns), (int)instance->columns);
     printf("\n\t\tFrobenius Norm: %f\n", matrix_frobenius_norm(instance));
     
 error:

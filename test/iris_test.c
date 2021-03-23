@@ -2,16 +2,25 @@
 #include <neural/network.h>
 #include <neural/router.h>
 
+data_set iris;
 neural_network   network;
 data_batch       iris_data;
+matrix *binary_target;
 
 char *data_load()
 {
     char *target_labels[] = { "species", NULL };
-    data_set iris = Data.csv("./test/data/iris.csv", NULL, target_labels);
-    matrix *binary_target = Data.convert.vector_to_binary(iris.target.values->vector);
+    iris = Data.csv("./test/data/iris.csv", NULL, target_labels);
+    binary_target = Data.convert.vector_to_binary(iris.target.values->vector);
     data_set iris_binary = Data.matrix(iris.features.values, binary_target);
     iris_data = Data.split(&iris_binary, 10, 90, 10, 0);
+
+    return NULL;
+}
+
+char *data_delete() {
+    Data.delete(&iris);
+    Matrix.delete(binary_target);
 
     return NULL;
 }
@@ -85,8 +94,9 @@ char *all_tests() {
     test_init();
     test_run(network_create_for_iris);
     test_run(data_load);
-    test_run(neuron_layer);
-    test_run(iris_train);
+    //test_run(neuron_layer);
+    //test_run(iris_train);
+    test_run(data_delete);
 
     return NULL;
 }

@@ -1,5 +1,4 @@
-#ifndef CSV_DOT_H_INCLUDE_GUARD
-#define CSV_DOT_H_INCLUDE_GUARD
+#pragma once
 
 #define CSV_ERR_LONGLINE 0
 #define CSV_ERR_NO_MEMORY 1
@@ -19,11 +18,17 @@ typedef struct {
     char ***values;
 } csv;
 
-csv *csv_readfile(char *filename);
-void csv_delete(csv *instance);
-char **csv_row(csv *instance, size_t row);
-char **csv_column(csv *instance, size_t column);
-char **csv_field(csv *instance, char *field_name);
+struct csv_library {
+    struct {
+        csv *      (*file)(char *filename);
+    } from;
 
-#endif
+    void           (*delete)(csv *instance);
+    struct {
+        char **    (*row)(csv *instance, size_t row);
+        char **    (*column)(csv *instance, size_t column);
+        char **    (*field)(csv *instance, char *field_name);
+    } get;
+};
 
+extern struct csv_library Csv;
