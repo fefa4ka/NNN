@@ -45,7 +45,7 @@ typedef struct
 typedef struct
 {
     char   *type;
-    
+
     size_t size;
     float *values;
 } vector;
@@ -53,7 +53,7 @@ typedef struct
 typedef struct
 {
     char *type;
-    
+
     char **keys;
     size_t size;
     vector *index;
@@ -71,17 +71,17 @@ struct vector_library {
     vector *  (*reshape)(vector *v, size_t size);
     vector *  (*seed)(vector *instance, float default_value);
     void      (*delete)(void *v);
-    
+
     void      (*print)(vector *v);
-    
+
     struct {
         number *      (*number)(float value);
         vector *      (*floats)(size_t size, float *values);
         vector *      (*strings)(size_t size, char **values);
-        
+
         vector_hash * (*hash)(size_t size, char **values);
     } from;
-    
+
     struct {
         int        (*index_of)(vector *v, float needle);
         vector *   (*unit)(vector *v);
@@ -93,32 +93,32 @@ struct vector_library {
             float      (*norm)(vector *v);
         } max;
     } prop;
-    
+
     struct {
         float     (*all)(vector *v);
         float     (*to)(vector *v, size_t to_index);
         float     (*between)(vector *v, size_t from_index, size_t to_index);
     } sum;
-    
+
     struct {
         float     (*angle)(vector *v, vector *w);
         enum bool (*is_equal)(vector *v, vector *w);
         enum bool (*is_perpendicular)(vector *v, vector *w);
     } rel;
-    
+
     // Operations
     vector *      (*add)(vector *v, void *term);
     vector *      (*sub)(vector *v, void *subtrahend);
     vector *      (*mul)(vector *v, void *factor);
     vector *      (*div)(vector *v, void *divider);
-    
+
     struct {
         vector *      (*add)(vector *v, float term);
         vector *      (*sub)(vector *v, float subtrahend);
         vector *      (*mul)(vector *v, float factor);
         vector *      (*div)(vector *v, float divider);
     } num;
-    
+
     float       (*dot)(vector *v, vector *w);
     vector *    (*map)(vector *v, double operation(double));
     vector *    (*map_of)(vector *v, float operation(float, float*), float *operation_params);
@@ -130,5 +130,5 @@ extern const struct vector_library Vector;
 vector *vector_create_ui(void);
 
 #endif /* vector_h */
-    
+
 

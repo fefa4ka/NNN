@@ -1,0 +1,12 @@
+[
+{
+  "directory": "/Users/fefa4ka/Development/NNN/refactor",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/cc  -I/Users/fefa4ka/Development/NNN/refactor/include  -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX12.3.sdk -mmacosx-version-min=12.1 -o CMakeFiles/nnn_math_vector.dir/src/math/vector.c.o -c /Users/fefa4ka/Development/NNN/refactor/src/math/vector.c",
+  "file": "/Users/fefa4ka/Development/NNN/refactor/src/math/vector.c"
+},
+{
+  "directory": "/Users/fefa4ka/Development/NNN/refactor",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/cc  -I/Users/fefa4ka/Development/NNN/refactor/include  -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX12.3.sdk -mmacosx-version-min=12.1 -o CMakeFiles/test_basic.dir/test/basic.c.o -c /Users/fefa4ka/Development/NNN/refactor/test/basic.c",
+  "file": "/Users/fefa4ka/Development/NNN/refactor/test/basic.c"
+}
+]

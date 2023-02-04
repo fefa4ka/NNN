@@ -10,29 +10,29 @@
 #define set_h
 
 #include <stdio.h>
-#include "../math/probability.h"
+#include <math/probability.h>
 
-typedef struct {    
+typedef struct {
     struct {
         matrix *    values;
         char **     fields;
     } data;
-    
+
     struct {
         char **     labels;
         matrix *    values;
     } features;
-    
+
     struct {
         char **     labels;
         matrix *    values;
     } target;
-    
+
     struct {
         float      mean;
         float      std;
     } normalization;
-    
+
 } data_set;
 
 typedef struct {

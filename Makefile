@@ -1,8 +1,8 @@
-CC=gcc-9
+CC=gcc
 WFLAGS=-Wall -Wextra
-CFLAGS=-g -Isrc -rdynamic -DNDEBUG $(WFLAGS) $(OPTFLAGS)
+CFLAGS=-g -Isrc -DNDEBUG $(WFLAGS) $(OPTFLAGS)
 LDFLAGS=#-fopenmp
-LIBS=-ldl $(OPTLIBS)
+LIBS=-ldl $(OPTLIBS) -Wl,-rpath,./build
 PREFIX?=/usr/local
 
 SOURCES=$(wildcard src/**/**/*.c src/**/*.c src/*.c)
@@ -15,9 +15,9 @@ TARGET=build/libnaive.a
 SO_TARGET=$(patsubst %.a, %.so, $(TARGET))
 
 # The Target Build
-all: $(TARGET) $(SO_TARGET) test
+all: $(TARGET) $(SO_TARGET)
 
-dev: CFLAGS=-fopenmp -mavx -g -Wall -Isrc -Wextra $(OPTFLAGS)
+dev: CFLAGS=-g -Wall -Isrc -Wextra $(OPTFLAGS)
 dev: all
 
 $(TARGET): CFLAGS += -fPIC
